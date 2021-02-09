@@ -107,9 +107,9 @@ def resnet_v1_eembc(input_shape=[32, 32, 3], num_classes=10, num_filters=[16, 32
     pool_size = int(np.amin(x.shape[1:3]))
     x = AveragePooling2D(pool_size=pool_size)(x)
     y = Flatten()(x)
-    outputs = Dense(num_classes,
-                    activation='softmax',
+    y = Dense(num_classes,
                     kernel_initializer='he_normal')(y)
+    outputs = Activation('softmax', name='softmax')(y)
 
     # Instantiate model.
     model = Model(inputs=inputs, outputs=outputs)
@@ -164,9 +164,9 @@ def resnet_v1_eembc_tiny(input_shape=[32, 32, 3], num_classes=10, num_filters=[8
     pool_size = int(np.amin(x.shape[1:3]))
     x = AveragePooling2D(pool_size=pool_size)(x)
     y = Flatten()(x)
-    outputs = Dense(num_classes,
-                    activation='softmax',
-                    kernel_initializer='he_normal')(y)
+    y = Dense(num_classes,
+              kernel_initializer='he_normal')(y)
+    outputs = Activation('softmax', name='softmax')(y)
 
     # Instantiate model.
     model = Model(inputs=inputs, outputs=outputs)
