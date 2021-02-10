@@ -60,11 +60,9 @@ def main(args):
     config['Model']['ReuseFactor'] = 10
     config['Model']['Strategy'] = 'Resource'
     config['Model']['Precision'] = 'ap_fixed<6,4>'
-    config['LayerName']['conv2d']['ReuseFactor'] = 10
-    config['LayerName']['conv2d_1']['ReuseFactor'] = 10
-    config['LayerName']['conv2d_2']['ReuseFactor'] = 10
-    config['LayerName']['conv2d_3']['ReuseFactor'] = 10
-    config['LayerName']['dense']['ReuseFactor'] = 10
+    for name in config['LayerName'].keys():
+        config['LayerName'][name]['ReuseFactor'] = 10
+        config['LayerName'][name]['Precision'] = 'ap_fixed<6,4>'
     config['LayerName']['softmax']['exp_table_t'] = 'ap_fixed<18,8>'
     config['LayerName']['softmax']['inv_table_t'] = 'ap_fixed<18,4>'
     config['LayerName']['softmax']['Strategy'] = 'Stable'
