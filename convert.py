@@ -57,14 +57,14 @@ def main(args):
     hls4ml.model.optimizer.OutputRoundingSaturationMode.saturation_mode = 'AP_SAT'
     config = hls4ml.utils.config_from_keras_model(model, granularity='name')
     config['Model'] = {}
-    config['Model']['ReuseFactor'] = 4
+    config['Model']['ReuseFactor'] = 10
     config['Model']['Strategy'] = 'Resource'
-    config['Model']['Precision'] = 'ap_fixed<16,6>'
-    config['LayerName']['conv2d']['ReuseFactor'] = 6
-    config['LayerName']['conv2d_1']['ReuseFactor'] = 4
-    config['LayerName']['conv2d_2']['ReuseFactor'] = 4
-    config['LayerName']['conv2d_3']['ReuseFactor'] = 4
-    config['LayerName']['dense']['ReuseFactor'] = 4
+    config['Model']['Precision'] = 'ap_fixed<6,4>'
+    config['LayerName']['conv2d']['ReuseFactor'] = 10
+    config['LayerName']['conv2d_1']['ReuseFactor'] = 10
+    config['LayerName']['conv2d_2']['ReuseFactor'] = 10
+    config['LayerName']['conv2d_3']['ReuseFactor'] = 10
+    config['LayerName']['dense']['ReuseFactor'] = 10
     config['LayerName']['softmax']['exp_table_t'] = 'ap_fixed<18,8>'
     config['LayerName']['softmax']['inv_table_t'] = 'ap_fixed<18,4>'
     config['LayerName']['softmax']['Strategy'] = 'Stable'

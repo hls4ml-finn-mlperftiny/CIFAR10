@@ -8,9 +8,6 @@ Backend: Pynq
 IOType: io_stream
 HLSConfig:
   Model:
-    Precision: ap_fixed<16,6>
-    ReuseFactor: 4
+    Precision: ap_fixed<6,2>
+    ReuseFactor: 10
     Strategy: Resource
-  LayerName:
-    conv2d: 
-      ReuseFactor: 6
