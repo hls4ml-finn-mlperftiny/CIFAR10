@@ -57,12 +57,12 @@ def main(args):
     hls4ml.model.optimizer.OutputRoundingSaturationMode.saturation_mode = 'AP_SAT'
     config = hls4ml.utils.config_from_keras_model(model, granularity='name')
     config['Model'] = {}
-    config['Model']['ReuseFactor'] = 10
+    config['Model']['ReuseFactor'] = 100
     config['Model']['Strategy'] = 'Resource'
-    config['Model']['Precision'] = 'ap_fixed<6,4>'
+    config['Model']['Precision'] = 'ap_fixed<8,4>'
     for name in config['LayerName'].keys():
-        config['LayerName'][name]['ReuseFactor'] = 10
-        config['LayerName'][name]['Precision'] = 'ap_fixed<6,4>'
+        config['LayerName'][name]['ReuseFactor'] = 100
+        config['LayerName'][name]['Precision'] = 'ap_fixed<8,4>'
     config['LayerName']['softmax']['exp_table_t'] = 'ap_fixed<18,8>'
     config['LayerName']['softmax']['inv_table_t'] = 'ap_fixed<18,4>'
     config['LayerName']['softmax']['Strategy'] = 'Stable'
@@ -72,6 +72,7 @@ def main(args):
     cfg['IOType'] = 'io_stream'
     cfg['Backend'] = 'Pynq'
     cfg['Interface'] = 's_axilite' # or 'm_axi'
+    cfg['ClockPeriod'] = 5
     cfg['KerasModel'] = model
     cfg['OutputDir'] = 'my-hls-test-tiny'
 
@@ -84,7 +85,7 @@ def main(args):
     cfg['OutputDir'] = 'my-hls-test-tiny'
     hls_model = hls4ml.converters.keras_to_hls(cfg)
     hls_model.compile()
-    hls_model.build(csim=False,synth=True,export=True)
+    hls_model.build(csim=False,synth=True)#,export=True)
     hls4ml.report.read_vivado_report('my-hls-test-tiny/')
     hls4ml.templates.PynqBackend.make_bitfile(hls_model)
 
