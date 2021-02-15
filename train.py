@@ -7,6 +7,7 @@ from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from sklearn.metrics import roc_auc_score
 import resnet_v1_eembc
 import yaml
+import csv
 
 #from keras_flops import get_flops #(different flop calculation)
 import kerop
@@ -78,7 +79,8 @@ def main(args):
     print('# MODEL SUMMARY #')
     print('#################')
     print(model.summary())
-    print('#################')
+    print('#################') 
+    
 
     # analyze FLOPs (see https://github.com/kentaroy47/keras-Opcounter)
     layer_name, layer_flops, inshape, weights = kerop.profile(model)
@@ -142,7 +144,16 @@ def main(args):
 
     print('Model accuracy = %.3f' % evaluation[1])
     print('Model weighted average AUC = %.3f' % auc)
-
+    
+    
+    #initialise .csv requirements
+    #csvfields = ['Model','FLOPs','Accuracy']
+    #csvfilename = "hyperparam_results/Best_2_30.csv"            #CHANGE THESE DEPENDING ON WHAT YOU'RE SAVING AND WHERE YOU'RE SAVING
+    #csvdata_rows = [['Layer 2 kernels at 2 from 3 ad Input Layer Stride 2 patience 30',total_flop/1e9,evaluation[1]]]
+    #with open(csvfilename, 'w') as csvfile:
+    #    csvwriter = csv.writer(csvfile)
+    #    csvwriter.writerow(csvfields)
+    #    csvwriter.writerows(csvdata_rows)
     
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -151,3 +162,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     main(args)
+
