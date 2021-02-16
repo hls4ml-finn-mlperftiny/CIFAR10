@@ -12,11 +12,12 @@ import csv
 #from keras_flops import get_flops #(different flop calculation)
 import kerop
 
-def lr_schedule_func(epoch):
-    initial_learning_rate = 0.001
-    decay_per_epoch = 0.99
-    lrate = initial_learning_rate * (decay_per_epoch ** epoch)
-    return lrate
+def get_lr_schedule_func(initial_lr, lr_decay):
+
+    def lr_schedule_func(epoch):
+        return initial_lr * (lr_decay ** epoch)
+
+    return lr_schedule_func
 
 from tensorflow.keras.datasets import cifar10
 
@@ -109,6 +110,8 @@ def main(args):
 
     # callbacks
     from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, LearningRateScheduler
+
+    lr_schedule_func = get_lr_schedule_func(initial_lr, lr_decay)
 
     callbacks = [ModelCheckpoint(model_file_path, monitor='val_accuracy', verbose=verbose, save_best_only=True),
                  EarlyStopping(monitor='val_accuracy', patience=patience, verbose=verbose, restore_best_weights=True),

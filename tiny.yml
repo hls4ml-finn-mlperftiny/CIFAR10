@@ -22,7 +22,7 @@ fit:
     lr_decay: 0.99
     optimizer: Adam
     loss: categorical_crossentropy
-  epochs: 100
-  patience: 20
-  batch_size: 128
+  epochs: 200
+  patience: 40
+  batch_size: 32
   verbose: 1
