@@ -12,6 +12,12 @@ import csv
 #from keras_flops import get_flops #(different flop calculation)
 import kerop
 
+def lr_schedule_func(epoch):
+    initial_learning_rate = 0.001
+    decay_per_epoch = 0.99
+    lrate = initial_learning_rate * (decay_per_epoch ** epoch)
+    return lrate
+
 from tensorflow.keras.datasets import cifar10
 
 def yaml_load(config):
@@ -96,28 +102,17 @@ def main(args):
     #total_flop = get_flops(model, batch_size=1)
     #print("FLOPS: {} GLOPs".format(total_flop/1e9))
 
-    print(X_train.shape[0] // batch_size)
-    lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
-        initial_lr,
-        decay_steps=X_train.shape[0] // batch_size,
-        decay_rate=lr_decay,
-        staircase=True)
-
-    model.compile(optimizer=optimizer(learning_rate=lr_schedule),
+    # compile model with optimizer
+    model.compile(optimizer=optimizer(learning_rate=initial_lr),
                   loss=loss,
                   metrics=['accuracy'])
 
-
-    # compile model with optimizer
-    #model.compile(loss=loss,
-    #              optimizer=optimizer,
-    #              metrics=['accuracy'])
-
     # callbacks
-    from tensorflow.keras.callbacks import EarlyStopping,ModelCheckpoint
+    from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, LearningRateScheduler
 
-    callbacks = [ModelCheckpoint(model_file_path, monitor='val_loss', verbose=verbose, save_best_only=True),
-                 EarlyStopping(monitor='val_loss', patience=patience, verbose=verbose, restore_best_weights=True)
+    callbacks = [ModelCheckpoint(model_file_path, monitor='val_accuracy', verbose=verbose, save_best_only=True),
+                 EarlyStopping(monitor='val_accuracy', patience=patience, verbose=verbose, restore_best_weights=True),
+                 LearningRateScheduler(lr_schedule_func, verbose=verbose),
     ]
 
     # train
