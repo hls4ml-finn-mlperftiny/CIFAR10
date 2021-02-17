@@ -35,9 +35,9 @@ def print_dict(d, indent=0):
             
 def main(args):
     # parameters
-    config = yaml_load(args.config)
-    save_dir = config['save_dir']
-    model_name = config['model']['name']
+    our_config = yaml_load(args.config)
+    save_dir = our_config['save_dir']
+    model_name = our_config['model']['name']
     model_file_path = os.path.join(save_dir, 'model_best.h5')
 
 
@@ -57,24 +57,25 @@ def main(args):
     hls4ml.model.optimizer.OutputRoundingSaturationMode.saturation_mode = 'AP_SAT'
     config = hls4ml.utils.config_from_keras_model(model, granularity='name')
     config['Model'] = {}
-    config['Model']['ReuseFactor'] = 100
-    config['Model']['Strategy'] = 'Resource'
-    config['Model']['Precision'] = 'ap_fixed<8,4>'
+    config['Model']['ReuseFactor'] = our_config['convert']['ReuseFactor']
+    config['Model']['Strategy'] = our_config['convert']['Strategy']
+    config['Model']['Precision'] = our_config['convert']['Precision']
     for name in config['LayerName'].keys():
-        config['LayerName'][name]['ReuseFactor'] = 100
-        config['LayerName'][name]['Precision'] = 'ap_fixed<8,4>'
+        config['LayerName'][name]['ReuseFactor'] = our_config['convert']['ReuseFactor']
+        config['LayerName'][name]['Precision'] = our_config['convert']['Precision']
+    # custom config for softmax
     config['LayerName']['softmax']['exp_table_t'] = 'ap_fixed<18,8>'
     config['LayerName']['softmax']['inv_table_t'] = 'ap_fixed<18,4>'
     config['LayerName']['softmax']['Strategy'] = 'Stable'
 
     cfg = hls4ml.converters.create_backend_config(fpga_part='xc7z020clg400-1')
     cfg['HLSConfig'] = config
-    cfg['IOType'] = 'io_stream'
-    cfg['Backend'] = 'Pynq'
+    cfg['IOType'] = our_config['convert']['IOType']
+    cfg['Backend'] = our_config['convert']['Backend']
     cfg['Interface'] = 's_axilite' # or 'm_axi'
-    cfg['ClockPeriod'] = 5
+    cfg['ClockPeriod'] = 10
     cfg['KerasModel'] = model
-    cfg['OutputDir'] = 'my-hls-test-tiny'
+    cfg['OutputDir'] = our_config['convert']['OutputDir']
 
     print("-----------------------------------")
     print_dict(cfg)
@@ -82,12 +83,12 @@ def main(args):
 
 
     # Bitfile time 
-    cfg['OutputDir'] = 'my-hls-test-tiny'
     hls_model = hls4ml.converters.keras_to_hls(cfg)
     hls_model.compile()
-    hls_model.build(csim=False,synth=True)#,export=True)
-    hls4ml.report.read_vivado_report('my-hls-test-tiny/')
-    hls4ml.templates.PynqBackend.make_bitfile(hls_model)
+    hls_model.build(csim=False,synth=True) #,export=True)
+    hls4ml.report.read_vivado_report(our_config['convert']['OutputDir'])
+    if our_config['convert']['Backend'] == 'Pynq':
+        hls4ml.templates.PynqBackend.make_bitfile(hls_model)
 
 
 if __name__ == "__main__":

@@ -28,3 +28,12 @@ fit:
   patience: 40
   batch_size: 32
   verbose: 1
+
+convert:
+  OutputDir: my-hls-test
+  XilinxPart: xc7z020clg400-1
+  Backend: Vivado
+  IOType: io_stream
+  Precision: ap_fixed<8,4>
+  ReuseFactor: 2304
+  Strategy: Resource
