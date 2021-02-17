@@ -8,6 +8,7 @@ from sklearn.metrics import roc_auc_score
 import resnet_v1_eembc
 import yaml
 import csv
+import setGPU
 
 #from keras_flops import get_flops #(different flop calculation)
 import kerop
@@ -134,25 +135,13 @@ def main(args):
     y_pred = model.predict(X_test)
 
     # evaluate with test dataset and share same prediction results
-    evaluation = model.evaluate(datagen.flow(X_test, y_test, batch_size=batch_size),
-                                steps=X_test.shape[0] // batch_size)
-
+    evaluation = model.evaluate(X_test, y_test)
     
     auc = roc_auc_score(y_test, y_pred, average='weighted', multi_class='ovr')
 
-    print('Model accuracy = %.3f' % evaluation[1])
-    print('Model weighted average AUC = %.3f' % auc)
-    
-    
-    #initialise .csv requirements
-    #csvfields = ['Model','FLOPs','Accuracy']
-    #csvfilename = "hyperparam_results/Best_2_30.csv"            #CHANGE THESE DEPENDING ON WHAT YOU'RE SAVING AND WHERE YOU'RE SAVING
-    #csvdata_rows = [['Layer 2 kernels at 2 from 3 ad Input Layer Stride 2 patience 30',total_flop/1e9,evaluation[1]]]
-    #with open(csvfilename, 'w') as csvfile:
-    #    csvwriter = csv.writer(csvfile)
-    #    csvwriter.writerow(csvfields)
-    #    csvwriter.writerows(csvdata_rows)
-    
+    print('Model test accuracy = %.3f' % evaluation[1])
+    print('Model test weighted average AUC = %.3f' % auc)
+        
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-c', '--config', type=str, default = "baseline.yml", help="specify yaml config")
