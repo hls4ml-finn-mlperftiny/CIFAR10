@@ -10,9 +10,9 @@ import yaml
 import csv
 import setGPU
 import kerop
-
+from train import get_lr_schedule_func
 import kerastuner
-from kerastuner.tuners import BayesianOptimization
+from kerastuner.tuners import BayesianOptimization, Hyperband, RandomSearch
 
 # define cnn model
 def build_model(hp):
@@ -56,17 +56,23 @@ def main(args):
     tuner = BayesianOptimization(
         build_model,
         objective='val_accuracy',
-        max_trials=40,
-        project_name='bo_resnet_v1_eembc',
+        max_trials=100,
+        project_name='bo_resnet_v1_eembc_10epoch_100maxtrials_lrdecay',
         overwrite=True)
 
     datagen.fit(X_train)
 
     print(tuner.search_space_summary())
 
+    from tensorflow.keras.callbacks import LearningRateScheduler
+    lr_schedule_func = get_lr_schedule_func(0.001, 0.99)
+
+    callbacks = [LearningRateScheduler(lr_schedule_func, verbose=1)]
+
     tuner.search(datagen.flow(X_train, y_train, batch_size=32),                
-                 epochs=5,
+                 epochs=10,
                  validation_data=(X_test, y_test),
+                 callbacks=callbacks,
                  verbose=1
              )
 
@@ -76,6 +82,3 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     main(args)
-
-
-
