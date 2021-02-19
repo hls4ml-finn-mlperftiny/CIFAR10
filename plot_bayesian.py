@@ -94,6 +94,11 @@ def main(args):
     plt.savefig('flops_val_acc_logx.png')
     plt.savefig('flops_val_acc_logx.pdf')
 
+    import pickle
+    f = open("results.pkl","wb")
+    pickle.dump(results,f)
+    f.close()
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-t', '--tuner', type=str, default = "RandomSearch", help="specify tuner(s): multiple ones separated by commas")
