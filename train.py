@@ -98,7 +98,15 @@ def main(args):
     for name, flop, shape in zip(layer_name, layer_flops, inshape):
         print("layer:", name, shape, " MFLOPs:", flop/1e6)
         total_flop += flop
-    print("Total FLOPs: {} GFLOPs".format(total_flop/1e9))
+    print("Total FLOPs: {} MFLOPs".format(total_flop/1e6))
+
+    tf.keras.utils.plot_model(model,
+                              to_file="model.png",
+                              show_shapes=True,
+                              show_dtype=False,
+                              show_layer_names=False,
+                              rankdir="TB",
+                              expand_nested=False)
 
     # Alternative FLOPs calculation (see https://github.com/tokusumi/keras-flops), ~same answer
     #total_flop = get_flops(model, batch_size=1)

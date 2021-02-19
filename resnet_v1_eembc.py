@@ -43,7 +43,7 @@ def resnet_v1_eembc(input_shape=[32, 32, 3], num_classes=10, num_filters=[16, 32
     x = Add()([x, y]) 
     x = Activation('relu')(x)
 
-    if len(num_filters) > 1 and num_filters[1] > 0:
+    if len(num_filters) > 1 and num_filters[1] > 0 and strides[1] > 0 and kernel_sizes[1] > 0:
         # Second stack
         # Weight layers
         y = Conv2D(num_filters[1],    #default [1]
@@ -74,7 +74,7 @@ def resnet_v1_eembc(input_shape=[32, 32, 3], num_classes=10, num_filters=[16, 32
         x = Add()([x, y])
         x = Activation('relu')(x)
         
-    if len(num_filters) > 2 and num_filters[2] > 0:
+    if len(num_filters) > 2 and num_filters[2] > 0 and strides[1] > 0 and kernel_sizes[1] > 0:
         # Third stack
         # Weight layers
         y = Conv2D(num_filters[2],     #default [2]

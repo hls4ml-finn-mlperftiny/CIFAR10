@@ -12,13 +12,14 @@ import setGPU
 import kerop
 from train import get_lr_schedule_func
 import kerastuner
-from kerastuner.tuners import BayesianOptimization, Hyperband, RandomSearch
+from tensorflow.keras.datasets import cifar10
 
 # define cnn model
 def build_model(hp):
-    hp_filters0 = hp.Choice('filters0', [2, 4, 8, 16])
-    hp_filters1 = hp.Choice('filters1', [4, 8, 16, 32])
-    hp_filters2 = hp.Choice('filters2', [8, 16, 32, 64])
+    # default 3 stacks
+    hp_filters0 = hp.Choice('filters0', [2, 4, 8, 16, 32, 64, 128])
+    hp_filters1 = hp.Choice('filters1', [2, 4, 8, 16, 32, 64])
+    hp_filters2 = hp.Choice('filters2', [2, 4, 8, 16, 32, 64])
     hp_kernelsize0 = hp.Choice('kernelsize0', [1, 2, 3])
     hp_kernelsize1 = hp.Choice('kernelsize1', [1, 2, 3])
     hp_strides0 = hp.Choice('strides0', [1, 4])
@@ -35,8 +36,6 @@ def build_model(hp):
                   metrics=['accuracy'])
     return model
 
-from tensorflow.keras.datasets import cifar10
-
 def main(args):
 
     (X_train, y_train), (X_test, y_test) = cifar10.load_data()
@@ -45,7 +44,7 @@ def main(args):
     y_train = tf.keras.utils.to_categorical(y_train, num_classes)
     y_test = tf.keras.utils.to_categorical(y_test, num_classes)
     
-    # define data generator                                                                                                      
+    # define data generator                                                                                                     
     datagen = ImageDataGenerator(
         rotation_range=15,
         width_shift_range=0.1,
@@ -53,11 +52,22 @@ def main(args):
         horizontal_flip=True,
     )
 
-    tuner = BayesianOptimization(
+    tunerClass = getattr(kerastuner.tuners,args.tuner)
+    hp = kerastuner.HyperParameters()
+    if args.stacks==2:
+        hp.Fixed('filters2', 0)
+    elif args.stacks==1:
+        hp.Fixed('filters1', 0)
+        hp.Fixed('filters2', 0)
+        hp.Fixed('kernelsize1', 0)
+        hp.Fixed('strides1', 0)
+
+    tuner = tunerClass(
         build_model,
         objective='val_accuracy',
-        max_trials=100,
-        project_name='bo_resnet_v1_eembc_10epoch_100maxtrials_lrdecay',
+        max_trials=args.max_trials,
+        project_name=args.project_dir,
+        hyperparameters=hp,
         overwrite=True)
 
     datagen.fit(X_train)
@@ -78,6 +88,10 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
+    parser.add_argument('-t', '--tuner', choices=['RandomSearch','BayesianOptimization'], default = "RandomSearch", help="specify tuner")
+    parser.add_argument('-p', '--project-dir', type=str, default = 'rs_resnet_v1_eembc', help = 'specify project dir')
+    parser.add_argument('-m', '--max-trials', type=int, default = 100, help = 'specify max trials')
+    parser.add_argument('-s', '--stacks', type=int, default = 3, help = 'specify number of stacks')
 
     args = parser.parse_args()
 
