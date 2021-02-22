@@ -15,6 +15,7 @@ import kerastuner
 import numpy as np
 from bayesian import build_model
 from tensorflow.keras.datasets import cifar10
+import pandas as pd
 
 def main(args):
 
@@ -94,10 +95,18 @@ def main(args):
     plt.savefig('flops_val_acc_logx.png')
     plt.savefig('flops_val_acc_logx.pdf')
 
+
     import pickle
     f = open("results.pkl","wb")
     pickle.dump(results,f)
     f.close()
+
+    print("best models")
+    df = pd.DataFrame.from_dict(results)
+    df['val_acc_over_log_flops'] = df['val_acc']/np.log10(df['flops'])
+    df.sort_values('val_acc_over_log_flops', inplace=True, ascending=False)
+    print(df.to_string())
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
