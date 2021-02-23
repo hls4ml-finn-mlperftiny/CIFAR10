@@ -16,9 +16,9 @@ def resnet_v1_eembc(input_shape=[32, 32, 3], num_classes=10, num_filters=[16, 32
 
     # Input layer, change kernel size to 7x7 and strides to 2 for an official resnet
     inputs = Input(shape=input_shape)
-    x = Conv2D(num_filters[0],
-                  kernel_size=kernel_sizes[0],
-                  strides=strides[0],
+    x = Conv2D(num_filters[0],   #default [0]
+                  kernel_size=kernel_sizes[0],    #default [0]
+                  strides=strides[0],    #default [0]
                   padding='same',
                   kernel_initializer='he_normal',
                   kernel_regularizer=l1_l2(l1=l1p,l2=l2p))(inputs)
@@ -27,17 +27,17 @@ def resnet_v1_eembc(input_shape=[32, 32, 3], num_classes=10, num_filters=[16, 32
 
     # First stack
     # Weight layers
-    y = Conv2D(num_filters[0],
-                  kernel_size=kernel_sizes[0],
-                  strides=strides[0],
+    y = Conv2D(num_filters[0],    #default [0]
+                  kernel_size=kernel_sizes[0],     #default [0]
+                  strides=strides[0],    #default [0]
                   padding='same',
                   kernel_initializer='he_normal',
                   kernel_regularizer=l1_l2(l1=l1p,l2=l2p))(x)
     y = BatchNormalization()(y)
     y = Activation('relu')(y)
-    y = Conv2D(num_filters[0],
-                  kernel_size=kernel_sizes[0],
-                  strides=strides[0],
+    y = Conv2D(num_filters[0],   #default [0]
+                  kernel_size=kernel_sizes[0],    #default [0]
+                  strides=strides[0],   #default [0]
                   padding='same',
                   kernel_initializer='he_normal',
                   kernel_regularizer=l1_l2(l1=l1p,l2=l2p))(y)
@@ -47,73 +47,75 @@ def resnet_v1_eembc(input_shape=[32, 32, 3], num_classes=10, num_filters=[16, 32
     x = Add()([x, y]) 
     x = Activation('relu')(x)
 
-    # Second stack
-    # Weight layers
-    y = Conv2D(num_filters[1],
-                  kernel_size=kernel_sizes[0],
-                  strides=strides[1],
-                  padding='same',
-                  kernel_initializer='he_normal',
-                  kernel_regularizer=l1_l2(l1=l1p,l2=l2p))(x)
-    y = BatchNormalization()(y)
-    y = Activation('relu')(y)
-    y = Conv2D(num_filters[1],
-                  kernel_size=kernel_sizes[0],
-                  strides=strides[0],
-                  padding='same',
-                  kernel_initializer='he_normal',
-                  kernel_regularizer=l1_l2(l1=l1p,l2=l2p))(y)
-    y = BatchNormalization()(y)
-  
-    # Adjust for change in dimension due to stride in identity
-    x = Conv2D(num_filters[1],
-                  kernel_size=kernel_sizes[1],
-                  strides=strides[1],
-                  padding='same',
-                  kernel_initializer='he_normal',
-                  kernel_regularizer=l1_l2(l1=l1p,l2=l2p))(x)
-
-    # Overall residual, connect weight layer and identity paths
-    x = Add()([x, y])
-    x = Activation('relu')(x)
-
-    # Third stack
-    # Weight layers
-    y = Conv2D(num_filters[2],
-                  kernel_size=kernel_sizes[0],
-                  strides=strides[1],
-                  padding='same',
-                  kernel_initializer='he_normal',
-                  kernel_regularizer=l1_l2(l1=l1p,l2=l2p))(x)
-    y = BatchNormalization()(y)
-    y = Activation('relu')(y)
-    y = Conv2D(num_filters[2],
-                  kernel_size=kernel_sizes[0],
-                  strides=strides[0],
-                  padding='same',
-                  kernel_initializer='he_normal',
-                  kernel_regularizer=l1_l2(l1=l1p,l2=l2p))(y)
-    y = BatchNormalization()(y)
-  
-    # Adjust for change in dimension due to stride in identity
-    x = Conv2D(num_filters[2],
-                  kernel_size=kernel_sizes[1],
-                  strides=strides[1],
-                  padding='same',
-                  kernel_initializer='he_normal',
-                  kernel_regularizer=l1_l2(l1=l1p,l2=l2p))(x)
-
-    # Overall residual, connect weight layer and identity paths
-    x = Add()([x, y])
-    x = Activation('relu')(x)
-
+    if len(num_filters) > 1 and num_filters[1] > 0 and strides[1] > 0 and kernel_sizes[1] > 0:
+        # Second stack
+        # Weight layers
+        y = Conv2D(num_filters[1],    #default [1]
+                   kernel_size=kernel_sizes[0],   #default [0]
+                   strides=strides[1],   #default [1]
+                   padding='same',
+                   kernel_initializer='he_normal',
+                   kernel_regularizer=l1_l2(l1=l1p,l2=l2p))(x)
+        y = BatchNormalization()(y)
+        y = Activation('relu')(y)  
+        y = Conv2D(num_filters[1],    #default [1]
+                   kernel_size=kernel_sizes[0],   #default [0]
+                   strides=strides[0],    #default [0]
+                   padding='same',
+                   kernel_initializer='he_normal',
+                   kernel_regularizer=l1_l2(l1=l1p,l2=l2p))(y)
+        y = BatchNormalization()(y)
+        
+        # Adjust for change in dimension due to stride in identity
+        x = Conv2D(num_filters[1],     #default [1]
+                   kernel_size=kernel_sizes[1],     #default [1]
+                   strides=strides[1],    #default [1]
+                   padding='same',
+                   kernel_initializer='he_normal',
+                   kernel_regularizer=l1_l2(l1=l1p,l2=l2p))(x)
+        
+        # Overall residual, connect weight layer and identity paths
+        x = Add()([x, y])
+        x = Activation('relu')(x)
+        
+    if len(num_filters) > 2 and num_filters[2] > 0 and strides[1] > 0 and kernel_sizes[1] > 0:
+        # Third stack
+        # Weight layers
+        y = Conv2D(num_filters[2],     #default [2]
+                   kernel_size=kernel_sizes[0],    #default [0]
+                   strides=strides[1],  #default [1]
+                   padding='same',
+                   kernel_initializer='he_normal',
+                   kernel_regularizer=l1_l2(l1=l1p,l2=l2p))(x)
+        y = BatchNormalization()(y)
+        y = Activation('relu')(y)
+        y = Conv2D(num_filters[2],      #default [2]
+                   kernel_size=kernel_sizes[0],    #default [0]
+                   strides=strides[0],  #default [0]
+                   padding='same',
+                   kernel_initializer='he_normal',
+                   kernel_regularizer=l1_l2(l1=l1p,l2=l2p))(y)
+        y = BatchNormalization()(y)
+        
+        # Adjust for change in dimension due to stride in identity
+        x = Conv2D(num_filters[2],    #default [2]
+                   kernel_size=kernel_sizes[1],    #default [1]
+                   strides=strides[1],   #default [1]
+                   padding='same',
+                   kernel_initializer='he_normal',
+                   kernel_regularizer=l1_l2(l1=l1p,l2=l2p))(x)
+        
+        # Overall residual, connect weight layer and identity paths
+        x = Add()([x, y])
+        x = Activation('relu')(x)
+        
     # Final classification layer.
     pool_size = int(np.amin(x.shape[1:3]))
     x = AveragePooling2D(pool_size=pool_size)(x)
     y = Flatten()(x)
-    outputs = Dense(num_classes,
-                    activation='softmax',
+    y = Dense(num_classes,
                     kernel_initializer='he_normal')(y)
+    outputs = Activation('softmax', name='softmax')(y)
 
     # Instantiate model.
     model = Model(inputs=inputs, outputs=outputs)
@@ -168,9 +170,9 @@ def resnet_v1_eembc_tiny(input_shape=[32, 32, 3], num_classes=10, num_filters=[8
     pool_size = int(np.amin(x.shape[1:3]))
     x = AveragePooling2D(pool_size=pool_size)(x)
     y = Flatten()(x)
-    outputs = Dense(num_classes,
-                    activation='softmax',
-                    kernel_initializer='he_normal')(y)
+    y = Dense(num_classes,
+              kernel_initializer='he_normal')(y)
+    outputs = Activation('softmax', name='softmax')(y)
 
     # Instantiate model.
     model = Model(inputs=inputs, outputs=outputs)

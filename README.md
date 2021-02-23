@@ -53,3 +53,23 @@ conda-env create -f environment.yml
 ``` 
 conda activate tiny-mlperf-env
 ```
+
+* Train baseline:
+```
+python train.py -c baseline.yml
+```
+
+* Train tiny:
+```
+python train.py -c tiny.yml
+```
+
+* Convert baseline (WARNING: not yet tested):
+```
+python convert.py -c baseline.yml
+```
+
+* Convert tiny:
+```
+python convert.py -c tiny.yml
+```

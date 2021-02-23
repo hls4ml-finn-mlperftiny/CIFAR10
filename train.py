@@ -7,9 +7,18 @@ from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from sklearn.metrics import roc_auc_score
 import resnet_v1_eembc
 import yaml
+import csv
+import setGPU
 
 #from keras_flops import get_flops #(different flop calculation)
 import kerop
+
+def get_lr_schedule_func(initial_lr, lr_decay):
+
+    def lr_schedule_func(epoch):
+        return initial_lr * (lr_decay ** epoch)
+
+    return lr_schedule_func
 
 from tensorflow.keras.datasets import cifar10
 
@@ -92,7 +101,8 @@ def main(args):
     print('# MODEL SUMMARY #')
     print('#################')
     print(model.summary())
-    print('#################')
+    print('#################') 
+    
 
     # analyze FLOPs (see https://github.com/kentaroy47/keras-Opcounter)
     layer_name, layer_flops, inshape, weights = kerop.profile(model)
@@ -102,34 +112,33 @@ def main(args):
     for name, flop, shape in zip(layer_name, layer_flops, inshape):
         print("layer:", name, shape, " MFLOPs:", flop/1e6)
         total_flop += flop
-    print("Total FLOPs: {} GFLOPs".format(total_flop/1e9))
+    print("Total FLOPs: {} MFLOPs".format(total_flop/1e6))
+
+    tf.keras.utils.plot_model(model,
+                              to_file="model.png",
+                              show_shapes=True,
+                              show_dtype=False,
+                              show_layer_names=False,
+                              rankdir="TB",
+                              expand_nested=False)
 
     # Alternative FLOPs calculation (see https://github.com/tokusumi/keras-flops), ~same answer
     #total_flop = get_flops(model, batch_size=1)
     #print("FLOPS: {} GLOPs".format(total_flop/1e9))
 
-    print(X_train.shape[0] // batch_size)
-    lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
-        initial_lr,
-        decay_steps=X_train.shape[0] // batch_size,
-        decay_rate=lr_decay,
-        staircase=True)
-
-    model.compile(optimizer=optimizer(learning_rate=lr_schedule),
+    # compile model with optimizer
+    model.compile(optimizer=optimizer(learning_rate=initial_lr),
                   loss=loss,
                   metrics=['accuracy'])
 
-
-    # compile model with optimizer
-    #model.compile(loss=loss,
-    #              optimizer=optimizer,
-    #              metrics=['accuracy'])
-
     # callbacks
-    from tensorflow.keras.callbacks import EarlyStopping,ModelCheckpoint
+    from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, LearningRateScheduler
 
-    callbacks = [ModelCheckpoint(model_file_path, monitor='val_loss', verbose=verbose, save_best_only=True),
-                 EarlyStopping(monitor='val_loss', patience=patience, verbose=verbose, restore_best_weights=True)
+    lr_schedule_func = get_lr_schedule_func(initial_lr, lr_decay)
+
+    callbacks = [ModelCheckpoint(model_file_path, monitor='val_accuracy', verbose=verbose, save_best_only=True),
+                 EarlyStopping(monitor='val_accuracy', patience=patience, verbose=verbose, restore_best_weights=True),
+                 LearningRateScheduler(lr_schedule_func, verbose=verbose),
     ]
 
     # train
@@ -148,16 +157,13 @@ def main(args):
     y_pred = model.predict(X_test)
 
     # evaluate with test dataset and share same prediction results
-    evaluation = model.evaluate(datagen.flow(X_test, y_test, batch_size=batch_size),
-                                steps=X_test.shape[0] // batch_size)
-
+    evaluation = model.evaluate(X_test, y_test)
     
     auc = roc_auc_score(y_test, y_pred, average='weighted', multi_class='ovr')
 
-    print('Model accuracy = %.3f' % evaluation[1])
-    print('Model weighted average AUC = %.3f' % auc)
-
-    
+    print('Model test accuracy = %.3f' % evaluation[1])
+    print('Model test weighted average AUC = %.3f' % auc)
+        
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-c', '--config', type=str, default = "baseline.yml", help="specify yaml config")
@@ -165,3 +171,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     main(args)
+

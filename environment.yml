@@ -8,14 +8,17 @@ dependencies:
     - jupyter
     - pydot
     - graphviz
-    - git+git://github.com/jmduarte/hls4ml@tinyml_patch#egg=hls4ml[profiling]
+    - git+https://github.com/jmduarte/hls4ml@pynq
     - matplotlib
     - numpy
     - PyYAML
     - scikit-learn
     - tensorflow
     - tqdm
-    - git+git://github.com/google/qkeras#egg=qkeras
+    - git+https://github.com/google/qkeras#egg=qkeras
     - keras-flops
     - git+https://github.com/kentaroy47/keras-Opcounter
-    - git+git://github.com/google/qkeras#egg=qkeras 
+    - kerastuner
+    - setgpu
+    - mplhep
+    
