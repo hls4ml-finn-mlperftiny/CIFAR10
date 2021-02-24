@@ -17,11 +17,9 @@ from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.regularizers import l1
 from qkeras.qlayers import QDense, QActivation
 from qkeras.quantizers import quantized_bits, quantized_relu
-
 from train import yaml_load
-
+from tensorflow.keras.datasets import cifar10
 import argparse
-
 
 def print_dict(d, indent=0):
     align=20
@@ -40,16 +38,25 @@ def main(args):
     model_name = our_config['model']['name']
     model_file_path = os.path.join(save_dir, 'model_best.h5')
 
-
     from tensorflow.keras.models import load_model
     from qkeras.utils import _add_supported_quantized_objects
     co = {}
-    _add_supported_quantized_objects(co)
-    
+    _add_supported_quantized_objects(co)    
 
     model = load_model(model_file_path, custom_objects=co)
     print(model.summary)
+                                                                                                             
+    (X_train, y_train), (X_test, y_test) = cifar10.load_data()
+    X_test = np.ascontiguousarray(X_test)
+    num_classes = 10
+    y_train = tf.keras.utils.to_categorical(y_train, num_classes)
+    y_test = tf.keras.utils.to_categorical(y_test, num_classes)
 
+    y_keras = model.predict(X_test)
+
+    np.save('y_keras.npy', y_keras)
+    np.save('y_test.npy', y_test)
+    np.save('X_test.npy', X_test)
 
     import hls4ml
     hls4ml.model.optimizer.OutputRoundingSaturationMode.layers = ['Activation']
@@ -81,15 +88,20 @@ def main(args):
     print_dict(cfg)
     print("-----------------------------------")
 
-
     # Bitfile time 
     hls_model = hls4ml.converters.keras_to_hls(cfg)
     hls_model.compile()
-    hls_model.build(csim=False,synth=True) #,export=True)
+    y_hls = hls_model.predict(X_test.astype(dtype=np.float32))
+    np.save('y_hls.npy', y_hls)
+
+    from sklearn.metrics import accuracy_score
+    print("Keras Accuracy:  {}".format(accuracy_score(np.argmax(y_test, axis=1), np.argmax(y_keras, axis=1))))
+    print("hls4ml Accuracy: {}".format(accuracy_score(np.argmax(y_hls, axis=1), np.argmax(y_keras, axis=1))))
+
+    hls_model.build(csim=False,synth=True,export=True)
     hls4ml.report.read_vivado_report(our_config['convert']['OutputDir'])
     if our_config['convert']['Backend'] == 'Pynq':
         hls4ml.templates.PynqBackend.make_bitfile(hls_model)
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

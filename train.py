@@ -9,9 +9,9 @@ import resnet_v1_eembc
 import yaml
 import csv
 import setGPU
-
 #from keras_flops import get_flops #(different flop calculation)
 import kerop
+from tensorflow.keras.datasets import cifar10
 
 def get_lr_schedule_func(initial_lr, lr_decay):
 
@@ -19,8 +19,6 @@ def get_lr_schedule_func(initial_lr, lr_decay):
         return initial_lr * (lr_decay ** epoch)
 
     return lr_schedule_func
-
-from tensorflow.keras.datasets import cifar10
 
 def yaml_load(config):
     with open(config) as stream:
@@ -48,7 +46,7 @@ def main(args):
     model_file_path = os.path.join(save_dir, 'model_best.h5')
 
     # quantization parameters
-    if model_name == "resnet_v1_eembc_quantized":
+    if 'quantized' in model_name:
         logit_total_bits = config["quantization"]["logit_total_bits"]
         logit_int_bits = config["quantization"]["logit_int_bits"]
         activation_total_bits = config["quantization"]["activation_total_bits"]
@@ -87,7 +85,7 @@ def main(args):
               'l2p': l2p}
 
     # pass quantization params
-    if model_name == "resnet_v1_eembc_quantized":
+    if 'quantized' in model_name:
         kwargs["logit_total_bits"] = logit_total_bits
         kwargs["logit_int_bits"] = logit_int_bits
         kwargs["activation_total_bits"] = activation_total_bits
@@ -103,7 +101,6 @@ def main(args):
     print(model.summary())
     print('#################') 
     
-
     # analyze FLOPs (see https://github.com/kentaroy47/keras-Opcounter)
     layer_name, layer_flops, inshape, weights = kerop.profile(model)
 
