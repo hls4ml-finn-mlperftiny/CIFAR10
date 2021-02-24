@@ -68,7 +68,7 @@ def main(args):
     config['Model']['Strategy'] = our_config['convert']['Strategy']
     config['Model']['Precision'] = our_config['convert']['Precision']
     for name in config['LayerName'].keys():
-        config['LayerName'][name]['ReuseFactor'] = our_config['convert']['ReuseFactor']
+        #config['LayerName'][name]['ReuseFactor'] = our_config['convert']['ReuseFactor']
         config['LayerName'][name]['Precision'] = our_config['convert']['Precision']
     # custom config for softmax
     config['LayerName']['softmax']['exp_table_t'] = 'ap_fixed<18,8>'
@@ -80,7 +80,7 @@ def main(args):
     cfg['IOType'] = our_config['convert']['IOType']
     cfg['Backend'] = our_config['convert']['Backend']
     cfg['Interface'] = 's_axilite' # or 'm_axi'
-    cfg['ClockPeriod'] = 10
+    cfg['ClockPeriod'] = our_config['convert']['ClockPeriod']
     cfg['KerasModel'] = model
     cfg['OutputDir'] = our_config['convert']['OutputDir']
 
