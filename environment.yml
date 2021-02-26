@@ -18,7 +18,7 @@ dependencies:
     - git+https://github.com/google/qkeras#egg=qkeras
     - keras-flops
     - git+https://github.com/kentaroy47/keras-Opcounter
-    - kerastuner
+    - keras-tuner
     - setgpu
     - mplhep
     
