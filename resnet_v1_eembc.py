@@ -11,14 +11,26 @@ from qkeras.qpooling import QAveragePooling2D
 from qkeras.quantizers import quantized_bits, quantized_relu
 
 #define model
-def resnet_v1_eembc(input_shape=[32, 32, 3], num_classes=10, num_filters=[16, 32, 64], 
-                    kernel_sizes=[3, 1], strides=[1, 2], l1p=1e-4, l2p=0):
+def resnet_v1_eembc(input_shape=[32, 32, 3], num_classes=10, l1p=0, l2p=1e-4,
+                    num_filters=[16, 16, # block 1
+                                 32, 32, # block 2
+                                 64, 64 # block 3
+                             ],
+                    kernel_sizes=[3, 3, 3, # block 1
+                                  3, 3, 1, # block 2
+                                  3, 3, 1 # block 3
+                              ],
+                    strides=['111', # block 1
+                             '212', # block 2
+                             '212', # block 3
+                         ]):
+
 
     # Input layer, change kernel size to 7x7 and strides to 2 for an official resnet
     inputs = Input(shape=input_shape)
-    x = Conv2D(num_filters[0],   #default [0]
-                  kernel_size=kernel_sizes[0],    #default [0]
-                  strides=strides[0],    #default [0]
+    x = Conv2D(num_filters[0],
+                  kernel_size=kernel_sizes[0],
+                  strides=int(strides[0][0]),
                   padding='same',
                   kernel_initializer='he_normal',
                   kernel_regularizer=l1_l2(l1=l1p,l2=l2p))(inputs)
@@ -27,17 +39,17 @@ def resnet_v1_eembc(input_shape=[32, 32, 3], num_classes=10, num_filters=[16, 32
 
     # First stack
     # Weight layers
-    y = Conv2D(num_filters[0],    #default [0]
-                  kernel_size=kernel_sizes[0],     #default [0]
-                  strides=strides[0],    #default [0]
+    y = Conv2D(num_filters[1],
+                  kernel_size=kernel_sizes[1],
+                  strides=int(strides[0][1]),
                   padding='same',
                   kernel_initializer='he_normal',
                   kernel_regularizer=l1_l2(l1=l1p,l2=l2p))(x)
     y = BatchNormalization()(y)
     y = Activation('relu')(y)
-    y = Conv2D(num_filters[0],   #default [0]
-                  kernel_size=kernel_sizes[0],    #default [0]
-                  strides=strides[0],   #default [0]
+    y = Conv2D(num_filters[0],
+                  kernel_size=kernel_sizes[2],
+                  strides=int(strides[0][2]),
                   padding='same',
                   kernel_initializer='he_normal',
                   kernel_regularizer=l1_l2(l1=l1p,l2=l2p))(y)
@@ -47,29 +59,29 @@ def resnet_v1_eembc(input_shape=[32, 32, 3], num_classes=10, num_filters=[16, 32
     x = Add()([x, y]) 
     x = Activation('relu')(x)
 
-    if len(num_filters) > 1 and num_filters[1] > 0 and strides[1] > 0 and kernel_sizes[1] > 0:
+    if len(num_filters) > 2 and num_filters[2] > 0 and strides[1] != '' and kernel_sizes[3] > 0:
         # Second stack
         # Weight layers
-        y = Conv2D(num_filters[1],    #default [1]
-                   kernel_size=kernel_sizes[0],   #default [0]
-                   strides=strides[1],   #default [1]
+        y = Conv2D(num_filters[2],
+                   kernel_size=kernel_sizes[3],
+                   strides=int(strides[1][0]),
                    padding='same',
                    kernel_initializer='he_normal',
                    kernel_regularizer=l1_l2(l1=l1p,l2=l2p))(x)
         y = BatchNormalization()(y)
         y = Activation('relu')(y)  
-        y = Conv2D(num_filters[1],    #default [1]
-                   kernel_size=kernel_sizes[0],   #default [0]
-                   strides=strides[0],    #default [0]
+        y = Conv2D(num_filters[3],
+                   kernel_size=kernel_sizes[4],
+                   strides=int(strides[1][1]),
                    padding='same',
                    kernel_initializer='he_normal',
                    kernel_regularizer=l1_l2(l1=l1p,l2=l2p))(y)
         y = BatchNormalization()(y)
         
         # Adjust for change in dimension due to stride in identity
-        x = Conv2D(num_filters[1],     #default [1]
-                   kernel_size=kernel_sizes[1],     #default [1]
-                   strides=strides[1],    #default [1]
+        x = Conv2D(num_filters[3],
+                   kernel_size=kernel_sizes[5],
+                   strides=int(strides[1][2]),
                    padding='same',
                    kernel_initializer='he_normal',
                    kernel_regularizer=l1_l2(l1=l1p,l2=l2p))(x)
@@ -78,29 +90,29 @@ def resnet_v1_eembc(input_shape=[32, 32, 3], num_classes=10, num_filters=[16, 32
         x = Add()([x, y])
         x = Activation('relu')(x)
         
-    if len(num_filters) > 2 and num_filters[2] > 0 and strides[1] > 0 and kernel_sizes[1] > 0:
+    if len(num_filters) > 4 and num_filters[4] > 0 and strides[2] != '' and kernel_sizes[6] > 0:
         # Third stack
         # Weight layers
-        y = Conv2D(num_filters[2],     #default [2]
-                   kernel_size=kernel_sizes[0],    #default [0]
-                   strides=strides[1],  #default [1]
+        y = Conv2D(num_filters[4],
+                   kernel_size=kernel_sizes[6],
+                   strides=int(strides[2][0]),
                    padding='same',
                    kernel_initializer='he_normal',
                    kernel_regularizer=l1_l2(l1=l1p,l2=l2p))(x)
         y = BatchNormalization()(y)
         y = Activation('relu')(y)
-        y = Conv2D(num_filters[2],      #default [2]
-                   kernel_size=kernel_sizes[0],    #default [0]
-                   strides=strides[0],  #default [0]
+        y = Conv2D(num_filters[5],
+                   kernel_size=kernel_sizes[7],
+                   strides=int(strides[2][1]),
                    padding='same',
                    kernel_initializer='he_normal',
                    kernel_regularizer=l1_l2(l1=l1p,l2=l2p))(y)
         y = BatchNormalization()(y)
         
         # Adjust for change in dimension due to stride in identity
-        x = Conv2D(num_filters[2],    #default [2]
-                   kernel_size=kernel_sizes[1],    #default [1]
-                   strides=strides[1],   #default [1]
+        x = Conv2D(num_filters[5],
+                   kernel_size=kernel_sizes[8],
+                   strides=int(strides[2][2]),
                    padding='same',
                    kernel_initializer='he_normal',
                    kernel_regularizer=l1_l2(l1=l1p,l2=l2p))(x)
@@ -179,7 +191,7 @@ def resnet_v1_eembc_tiny(input_shape=[32, 32, 3], num_classes=10, num_filters=[8
 
 
 def resnet_v1_eembc_tiny_quantized(input_shape=[32, 32, 3], num_classes=10, num_filters=[8], 
-                                   kernel_sizes=[3, 1], strides=[1, 2], l1p=1e-4, l2p=0,
+                                   kernel_sizes=[3, 1], strides=[1, 2], l1p=0, l2p=1e-4,
                                    logit_total_bits=7, logit_int_bits=0, activation_total_bits=7, activation_int_bits=3):
 
     # Input layer, change kernel size to 7x7 and strides to 2 for an official resnet
@@ -249,7 +261,7 @@ def resnet_v1_eembc_tiny_quantized(input_shape=[32, 32, 3], num_classes=10, num_
 
 #quantized model
 def resnet_v1_eembc_quantized(input_shape=[32, 32, 3], num_classes=10, num_filters=[16, 32, 64], 
-                    kernel_sizes=[3, 1], strides=[1, 2], l1p=1e-4, l2p=0,
+                    kernel_sizes=[3, 1], strides=[1, 2], l1p=0, l2p=1e-4,
                     logit_total_bits=7, logit_int_bits=0, activation_total_bits=7, activation_int_bits=3):
 
     # Input layer, change kernel size to 7x7 and strides to 2 for an official resnet
