@@ -78,7 +78,7 @@ def main(args):
         hp.Fixed('filters2_1', 0)
         hp.Fixed('kernelsize2_0', 0)
         hp.Fixed('kernelsize2_1', 0)
-        hp.Fixed('kernelsize2_3', 0)
+        hp.Fixed('kernelsize2_2', 0)
         hp.Fixed('strides2', '')
     elif args.stacks==1:
         hp.Fixed('filters1_0', 0)
@@ -87,10 +87,10 @@ def main(args):
         hp.Fixed('filters2_1', 0)
         hp.Fixed('kernelsize1_0', 0)
         hp.Fixed('kernelsize1_1', 0)
-        hp.Fixed('kernelsize1_3', 0)
+        hp.Fixed('kernelsize1_2', 0)
         hp.Fixed('kernelsize2_0', 0)
         hp.Fixed('kernelsize2_1', 0)
-        hp.Fixed('kernelsize2_3', 0)
+        hp.Fixed('kernelsize2_2', 0)
         hp.Fixed('strides1', '')
         hp.Fixed('strides2', '')
 

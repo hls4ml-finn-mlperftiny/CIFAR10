@@ -109,9 +109,9 @@ def main(args):
 
     print("best models")
     df = pd.DataFrame.from_dict(results)
-    df['val_acc_over_log_flops'] = df['val_acc']/np.log10(df['flops'])
-    df.sort_values('val_acc_over_log_flops', inplace=True, ascending=False)
-    print(df.to_string())
+    #df['val_acc_over_log_flops'] = df['val_acc']/np.log10(df['flops'])
+    df.sort_values('val_acc', inplace=True, ascending=False)
+    print(df[df['flops']<1e6].to_string())
 
 
 if __name__ == "__main__":
