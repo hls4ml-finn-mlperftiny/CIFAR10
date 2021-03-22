@@ -25,9 +25,15 @@ def main(args):
     y_train = tf.keras.utils.to_categorical(y_train, num_classes)
     y_test = tf.keras.utils.to_categorical(y_test, num_classes)
 
-    results = {'filters0': [], 'filters1': [], 'filters2': [], 
-               'kernelsize0': [], 'kernelsize1': [], 
-               'strides0': [], 'strides1': [],
+    results = {'filters0_0': [], 'filters0_1': [], 
+               'filters1_0': [], 'filters1_1': [], 
+               'filters2_0': [], 'filters2_1': [], 
+               'kernelsize0_0': [], 'kernelsize0_1': [], 'kernelsize0_2': [], 
+               'kernelsize1_0': [], 'kernelsize1_1': [], 'kernelsize1_2': [], 
+               'kernelsize2_0': [], 'kernelsize2_1': [], 'kernelsize2_2': [], 
+               'strides0': [], 
+               'strides1': [],
+               'strides2': [],
                'val_acc': [], 'flops': [], 'stacks': []}
 
 
@@ -63,7 +69,7 @@ def main(args):
             result = hp.values
             result['val_acc'] = val_acc
             result['flops'] = total_flop
-            result['stacks'] = 1 + 1*(result['filters1']!=0) + 1*(result['filters2']!=0) 
+            result['stacks'] = 1 + 1*(result['filters1_0']!=0) + 1*(result['filters2_0']!=0) 
             for key in result:
                 results[key].append(result[key])
     # change to numpy array for easier indexing
@@ -89,15 +95,15 @@ def main(args):
     plt.xlabel('FLOPs')
     plt.ylabel('Test accuracy')
     plt.legend(title='Stacks')
-    plt.savefig('flops_val_acc.png')
-    plt.savefig('flops_val_acc.pdf')
+    plt.savefig(os.path.join(project_dir,'flops_val_acc.png'))
+    plt.savefig(os.path.join(project_dir,'flops_val_acc.pdf'))
     plt.semilogx()
-    plt.savefig('flops_val_acc_logx.png')
-    plt.savefig('flops_val_acc_logx.pdf')
+    plt.savefig(os.path.join(project_dir,'flops_val_acc_logx.png'))
+    plt.savefig(os.path.join(project_dir,'flops_val_acc_logx.pdf'))
 
 
     import pickle
-    f = open("results.pkl","wb")
+    f = open(os.path.join(project_dir,"results.pkl"),"wb")
     pickle.dump(results,f)
     f.close()
 
