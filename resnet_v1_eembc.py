@@ -380,7 +380,7 @@ def resnet_v1_eembc_quantized(input_shape=[32, 32, 3], num_classes=10, num_filte
     # Do we want Qlayer of this below?
     x = QAveragePooling2D(pool_size=pool_size, quantizer=quantized_relu(activation_total_bits, activation_int_bits))(x)
     y = Flatten()(x)
-    # Changed output to separate QDense but did not quantize softmax as specified, is this the way you wanted it?
+    # Changed output to separate QDense but did not quantize softmax as specified
     outputs = QDense(num_classes,
                      kernel_quantizer=quantized_bits(logit_total_bits, logit_int_bits, alpha=1),
                      bias_quantizer=quantized_bits(logit_total_bits, logit_int_bits, alpha=1),
