@@ -110,7 +110,18 @@ def main(args):
     print("best models")
     df = pd.DataFrame.from_dict(results)
     #df['val_acc_over_log_flops'] = df['val_acc']/np.log10(df['flops'])
+    # sort by val accuracy
     df.sort_values('val_acc', inplace=True, ascending=False)
+    # drop duplicate hyperparameters (but keep highest accuracy)
+    df.drop_duplicates(subset=['filters0_0', 'filters0_1',
+                               'filters1_0', 'filters1_1',
+                               'filters2_0', 'filters2_1',
+                               'kernelsize0_0', 'kernelsize0_1', 'kernelsize0_2',
+                               'kernelsize1_0', 'kernelsize1_1', 'kernelsize1_2',
+                               'kernelsize2_0', 'kernelsize2_1', 'kernelsize2_2',
+                               'strides0', 'strides1', 'strides2'], 
+                       inplace=True, keep='first')
+    # print all models with < 1 MFLOPs
     print(df[df['flops']<1e6].to_string())
 
 

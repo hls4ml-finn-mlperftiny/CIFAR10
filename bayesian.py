@@ -14,24 +14,27 @@ from train import get_lr_schedule_func
 import kerastuner
 from tensorflow.keras.datasets import cifar10
 
+filter_space = [2, 4, 8, 16, 32]
+kernelsize_space = [1, 2, 3]
+
 # define cnn model
 def build_model(hp):
     # default 3 stacks
-    hp_filters0_0 = hp.Choice('filters0_0', [2, 4, 8, 16])
-    hp_filters0_1 = hp.Choice('filters0_1', [2, 4, 8, 16])
-    hp_filters1_0 = hp.Choice('filters1_0', [2, 4, 8, 16])
-    hp_filters1_1 = hp.Choice('filters1_1', [2, 4, 8, 16])
-    hp_filters2_0 = hp.Choice('filters2_0', [2, 4, 8, 16])
-    hp_filters2_1 = hp.Choice('filters2_1', [2, 4, 8, 16])
-    hp_kernelsize0_0 = hp.Choice('kernelsize0_0', [1, 2, 3])
-    hp_kernelsize0_1 = hp.Choice('kernelsize0_1', [1, 2, 3])
-    hp_kernelsize0_2 = hp.Choice('kernelsize0_2', [1, 2, 3])
-    hp_kernelsize1_0 = hp.Choice('kernelsize1_0', [1, 2, 3])
-    hp_kernelsize1_1 = hp.Choice('kernelsize1_1', [1, 2, 3])
-    hp_kernelsize1_2 = hp.Choice('kernelsize1_2', [1, 2, 3])
-    hp_kernelsize2_0 = hp.Choice('kernelsize2_0', [1, 2, 3])
-    hp_kernelsize2_1 = hp.Choice('kernelsize2_1', [1, 2, 3])
-    hp_kernelsize2_2 = hp.Choice('kernelsize2_2', [1, 2, 3])
+    hp_filters0_0 = hp.Choice('filters0_0', filter_space)
+    hp_filters0_1 = hp.Choice('filters0_1', filter_space)
+    hp_filters1_0 = hp.Choice('filters1_0', filter_space)
+    hp_filters1_1 = hp.Choice('filters1_1', filter_space)
+    hp_filters2_0 = hp.Choice('filters2_0', filter_space)
+    hp_filters2_1 = hp.Choice('filters2_1', filter_space)
+    hp_kernelsize0_0 = hp.Choice('kernelsize0_0', kernelsize_space)
+    hp_kernelsize0_1 = hp.Choice('kernelsize0_1', kernelsize_space)
+    hp_kernelsize0_2 = hp.Choice('kernelsize0_2', kernelsize_space)
+    hp_kernelsize1_0 = hp.Choice('kernelsize1_0', kernelsize_space)
+    hp_kernelsize1_1 = hp.Choice('kernelsize1_1', kernelsize_space)
+    hp_kernelsize1_2 = hp.Choice('kernelsize1_2', kernelsize_space)
+    hp_kernelsize2_0 = hp.Choice('kernelsize2_0', kernelsize_space)
+    hp_kernelsize2_1 = hp.Choice('kernelsize2_1', kernelsize_space)
+    hp_kernelsize2_2 = hp.Choice('kernelsize2_2', kernelsize_space)
 
     hp_strides0 = hp.Choice('strides0', ['111', '211', '244', '311', '334', '343', '344', '411', '424', '433', '434', '442', '443', '444'])
     hp_strides1 = hp.Choice('strides1', ['111', '122', '133', '144', '212', '224', '313', '414'])
