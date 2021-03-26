@@ -175,7 +175,7 @@ def resnet_v1_eembc_quantized(input_shape=[32, 32, 3], num_classes=10, l1p=0, l2
     y = QActivation(activation=quantized_relu(activation_total_bits, activation_int_bits))(y)
     y = QConv2D(num_filters[0],
                   kernel_size=kernel_sizes[2],
-                  strides=int(strides[0][1]),
+                  strides=int(strides[0][2]),
                   padding='same',
                   kernel_quantizer=quantized_bits(logit_total_bits, logit_int_bits, alpha=1),
                   bias_quantizer=quantized_bits(logit_total_bits, logit_int_bits, alpha=1),

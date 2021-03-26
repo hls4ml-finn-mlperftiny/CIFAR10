@@ -47,7 +47,7 @@ def main(args):
     print(model.summary)
                                                                                                              
     (X_train, y_train), (X_test, y_test) = cifar10.load_data()
-    X_test = np.ascontiguousarray(X_test)
+    X_test = np.ascontiguousarray(X_test/255.)
     num_classes = 10
     y_train = tf.keras.utils.to_categorical(y_train, num_classes)
     y_test = tf.keras.utils.to_categorical(y_test, num_classes)
@@ -68,7 +68,7 @@ def main(args):
     config['Model']['Strategy'] = our_config['convert']['Strategy']
     config['Model']['Precision'] = our_config['convert']['Precision']
     for name in config['LayerName'].keys():
-        #config['LayerName'][name]['ReuseFactor'] = our_config['convert']['ReuseFactor']
+        config['LayerName'][name]['ReuseFactor'] = our_config['convert']['ReuseFactor']
         config['LayerName'][name]['Precision'] = our_config['convert']['Precision']
     # custom config for softmax
     config['LayerName']['softmax']['exp_table_t'] = 'ap_fixed<18,8>'
