@@ -1,7 +1,7 @@
 import os
 # edit depending on where Vivado is installed:
 # os.environ['PATH'] = '/<Xilinx installation directory>/Vivado/<version>/bin:' + os.environ['PATH']
-os.environ['PATH'] = '/opt/local/Xilinx/Vivado/2019.1/bin:' + os.environ['PATH']
+os.environ['PATH'] = '/opt/local/Xilinx/Vivado/2019.2/bin:' + os.environ['PATH']
 import tensorflow as tf
 from qkeras.utils import _add_supported_quantized_objects
 import hls4ml
@@ -44,13 +44,13 @@ def main(args):
     _add_supported_quantized_objects(co)    
 
     model = load_model(model_file_path, custom_objects=co)
-    print(model.summary)
-                                                                                                             
+    model.summary()
+
     (X_train, y_train), (X_test, y_test) = cifar10.load_data()
-    X_test = np.ascontiguousarray(X_test/255.)
+    X_test = np.ascontiguousarray(X_test[:100]/255.)
     num_classes = 10
     y_train = tf.keras.utils.to_categorical(y_train, num_classes)
-    y_test = tf.keras.utils.to_categorical(y_test, num_classes)
+    y_test = tf.keras.utils.to_categorical(y_test[:100], num_classes)
 
     y_keras = model.predict(X_test)
 
@@ -68,12 +68,19 @@ def main(args):
     config['Model']['Strategy'] = our_config['convert']['Strategy']
     config['Model']['Precision'] = our_config['convert']['Precision']
     for name in config['LayerName'].keys():
+        config['LayerName'][name]['Trace'] = True
         config['LayerName'][name]['ReuseFactor'] = our_config['convert']['ReuseFactor']
         config['LayerName'][name]['Precision'] = our_config['convert']['Precision']
+        if 'normalization' in name:
+            config['LayerName'][name]['Precision'] = 'ap_fixed<16,4>'
+        elif 'activation' in name:
+            config['LayerName'][name]['Precision'] = 'ap_fixed<10,4>'
     # custom config for softmax
     config['LayerName']['softmax']['exp_table_t'] = 'ap_fixed<18,8>'
     config['LayerName']['softmax']['inv_table_t'] = 'ap_fixed<18,4>'
     config['LayerName']['softmax']['Strategy'] = 'Stable'
+    config['LayerName']['softmax']['Precision'] = 'ap_fixed<18,2>'
+
 
     cfg = hls4ml.converters.create_backend_config(fpga_part='xc7z020clg400-1')
     cfg['HLSConfig'] = config
@@ -94,14 +101,29 @@ def main(args):
     y_hls = hls_model.predict(X_test.astype(dtype=np.float32))
     np.save('y_hls.npy', y_hls)
 
+    from hls4ml.model.profiling import compare, numerical
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    wp, ap = numerical(model=model, hls_model=hls_model, X=X_test)
+    plt.show()
+    plt.savefig('profiling_numerical.png', dpi=300)
+
+    cp = compare(keras_model=model, hls_model=hls_model, X=X_test, plot_type="dist_diff")
+    plt.show()
+    plt.savefig('profiling_compare.png', dpi=300)
+
+    hls4ml_pred, hls4ml_trace = hls_model.trace(X_test)
+    keras_trace = hls4ml.model.profiling.get_ymodel_keras(model, X_test)
+
     from sklearn.metrics import accuracy_score
     print("Keras Accuracy:  {}".format(accuracy_score(np.argmax(y_test, axis=1), np.argmax(y_keras, axis=1))))
     print("hls4ml Accuracy: {}".format(accuracy_score(np.argmax(y_hls, axis=1), np.argmax(y_keras, axis=1))))
 
-    hls_model.build(csim=False,synth=True,export=True)
-    hls4ml.report.read_vivado_report(our_config['convert']['OutputDir'])
-    if our_config['convert']['Backend'] == 'Pynq':
-        hls4ml.templates.PynqBackend.make_bitfile(hls_model)
+    #hls_model.build(csim=False,synth=True,export=True)
+    #hls4ml.report.read_vivado_report(our_config['convert']['OutputDir'])
+    #if our_config['convert']['Backend'] == 'Pynq':
+    #    hls4ml.templates.PynqBackend.make_bitfile(hls_model)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
