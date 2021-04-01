@@ -29,9 +29,9 @@ fit:
   verbose: 1
 
 quantization:
-  logit_total_bits: 7
-  logit_int_bits: 0
-  activation_total_bits: 7
+  logit_total_bits: 10
+  logit_int_bits: 3
+  activation_total_bits: 10
   activation_int_bits: 3
 
 convert:
@@ -39,7 +39,8 @@ convert:
   XilinxPart: xc7z020clg400-1
   Backend: Pynq
   IOType: io_stream
-  Precision: ap_fixed<10,2>
+  Precision: ap_fixed<10,4,AP_SAT,AP_RND>
+  PrecisionActivation: ap_fixed<10,4,AP_SAT,AP_RND>
   ReuseFactor: 1024
   ClockPeriod: 20
   Strategy: Resource
