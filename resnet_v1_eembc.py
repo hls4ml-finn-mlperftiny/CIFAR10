@@ -179,8 +179,7 @@ def resnet_v1_eembc_quantized(input_shape=[32, 32, 3], num_classes=10, l1p=0, l2
                   kernel_quantizer=quantized_bits(logit_total_bits, logit_int_bits, alpha=1),
                   bias_quantizer=quantized_bits(logit_total_bits, logit_int_bits, alpha=1),
                   kernel_initializer='he_normal',
-                  kernel_regularizer=l1_l2(l1=l1p,l2=l2p),
-                  quantizer=quantized_bits(activation_total_bits, activation_int_bits))(y)
+                  kernel_regularizer=l1_l2(l1=l1p,l2=l2p))(y)
     y = QActivation(activation=quantized_bits(activation_total_bits, activation_int_bits))(y)
 
     # Overall residual, connect weight layer and identity paths

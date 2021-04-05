@@ -15,7 +15,7 @@ model:
   - '311'
 
 pruning:
-  sparsity: 1.0 
+  sparsity: 1.0
 
 fit:
   compile:
@@ -29,18 +29,19 @@ fit:
   verbose: 1
 
 quantization:
-  logit_total_bits: 10
-  logit_int_bits: 3
-  activation_total_bits: 10
-  activation_int_bits: 3
+  logit_total_bits: 7
+  logit_int_bits: 2
+  activation_total_bits: 7
+  activation_int_bits: 2
 
 convert:
   OutputDir: my-hls-test-quantized
   XilinxPart: xc7z020clg400-1
   Backend: Pynq
   IOType: io_stream
-  Precision: ap_fixed<10,4,AP_SAT,AP_RND>
-  PrecisionActivation: ap_fixed<10,4,AP_SAT,AP_RND>
+  Precision: ap_fixed<10,6,AP_SAT,AP_RND>
+  PrecisionActivation: ap_fixed<10,6,AP_SAT,AP_RND>
+  PrecisionAccumulator: ap_fixed<14,10,AP_RND,AP_SAT>
   ReuseFactor: 1024
   ClockPeriod: 20
   Strategy: Resource

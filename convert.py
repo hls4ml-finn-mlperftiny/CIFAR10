@@ -47,9 +47,9 @@ def main(args):
     model.summary()
 
     _, (X_test, y_test) = cifar10.load_data()
-    X_test = np.ascontiguousarray(X_test[:10]/255.)
+    X_test = np.ascontiguousarray(X_test[:100]/255.)
     num_classes = 10
-    y_test = tf.keras.utils.to_categorical(y_test[:10], num_classes)
+    y_test = tf.keras.utils.to_categorical(y_test[:100], num_classes)
 
     y_keras = model.predict(X_test)
 
@@ -58,9 +58,6 @@ def main(args):
     np.save('X_test.npy', X_test)
 
     import hls4ml
-    #hls4ml.model.optimizer.OutputRoundingSaturationMode.layers = ['Activation']
-    #hls4ml.model.optimizer.OutputRoundingSaturationMode.rounding_mode = 'AP_RND'
-    #hls4ml.model.optimizer.OutputRoundingSaturationMode.saturation_mode = 'AP_SAT'
     config = hls4ml.utils.config_from_keras_model(model, granularity='name')
     config['Model'] = {}
     config['Model']['ReuseFactor'] = our_config['convert']['ReuseFactor']
@@ -72,13 +69,12 @@ def main(args):
         config['LayerName'][name]['Precision'] = our_config['convert']['Precision']
         if 'activation' in name:
             config['LayerName'][name]['Precision'] = our_config['convert']['PrecisionActivation']
+    config['LayerName']['average_pooling2d']['accum_t'] = our_config['convert']['PrecisionAccumulator']
     # custom config for softmax
-    config['LayerName']['softmax']['Precision'] = 'ap_fixed<16,4>'
-    config['LayerName']['softmax']['exp_table_t'] = 'ap_fixed<18,8>'
-    config['LayerName']['softmax']['inv_table_t'] = 'ap_fixed<18,4>'
+    config['LayerName']['softmax']['Precision'] = 'ap_fixed<18,8,AP_SAT,AP_RND>'
+    config['LayerName']['softmax']['exp_table_t'] = 'ap_fixed<18,8,AP_RND,AP_SAT>'
+    config['LayerName']['softmax']['inv_table_t'] = 'ap_fixed<18,8,AP_RND,AP_SAT>'
     config['LayerName']['softmax']['Strategy'] = 'Stable'
-
-
 
     cfg = hls4ml.converters.create_backend_config(fpga_part='xc7z020clg400-1')
     cfg['HLSConfig'] = config
@@ -100,10 +96,13 @@ def main(args):
     import matplotlib
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
+
+    plt.figure()
     wp, ap = numerical(model=model, hls_model=hls_model, X=X_test)
     plt.show()
     plt.savefig('profiling_numerical.png', dpi=300)
 
+    plt.figure()
     cp = compare(keras_model=model, hls_model=hls_model, X=X_test, plot_type="dist_diff")
     plt.show()
     plt.savefig('profiling_compare.png', dpi=300)
@@ -112,13 +111,16 @@ def main(args):
     np.save('y_hls.npy', y_hls)
     keras_trace = hls4ml.model.profiling.get_ymodel_keras(model, X_test)
 
-    print("hls4ml_trace")
-    print(hls4ml_trace)
-    print("keras_trace")
-    print(keras_trace)
-    print("diff_trace")
-    for key in hls4ml_trace.keys():
-        print(key, hls4ml_trace[key]-keras_trace[key])
+    for layer in hls4ml_trace.keys():
+        plt.figure()
+        plt.scatter(hls4ml_trace[layer].flatten(), keras_trace[layer].flatten(), s=0.2)
+        min_x = min(np.amin(hls4ml_trace[layer]), np.amin(keras_trace[layer]))
+        max_x = max(np.amax(hls4ml_trace[layer]), np.amax(keras_trace[layer]))
+        plt.plot([min_x, max_x], [min_x, max_x], c='gray')
+        plt.xlabel('hls4ml {}'.format(layer))
+        plt.ylabel('QKeras {}'.format(layer))
+        plt.show()
+        plt.savefig('profiling_{}.png'.format(layer), dpi=300)
     
     from sklearn.metrics import accuracy_score
     print("Keras Accuracy:  {}".format(accuracy_score(np.argmax(y_test, axis=1), np.argmax(y_keras, axis=1))))
