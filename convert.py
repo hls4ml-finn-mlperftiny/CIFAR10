@@ -58,6 +58,9 @@ def main(args):
     np.save('X_test.npy', X_test)
 
     import hls4ml
+    hls4ml.model.optimizer.OutputRoundingSaturationMode.layers = ['Dense', 'Conv2DBatchnorm', 'Activation', 'Input', 'ZeroPadding2D', 'Clone', 'Merge', 'Pooling2D', 'Softmax']
+    hls4ml.model.optimizer.OutputRoundingSaturationMode.rounding_mode = 'AP_RND'
+    hls4ml.model.optimizer.OutputRoundingSaturationMode.saturation_mode = 'AP_SAT'
     config = hls4ml.utils.config_from_keras_model(model, granularity='name')
     config['Model'] = {}
     config['Model']['ReuseFactor'] = our_config['convert']['ReuseFactor']
@@ -71,9 +74,6 @@ def main(args):
             config['LayerName'][name]['Precision'] = our_config['convert']['PrecisionActivation']
     config['LayerName']['average_pooling2d']['accum_t'] = our_config['convert']['PrecisionAccumulator']
     # custom config for softmax
-    config['LayerName']['softmax']['Precision'] = 'ap_fixed<18,8,AP_SAT,AP_RND>'
-    config['LayerName']['softmax']['exp_table_t'] = 'ap_fixed<18,8,AP_RND,AP_SAT>'
-    config['LayerName']['softmax']['inv_table_t'] = 'ap_fixed<18,8,AP_RND,AP_SAT>'
     config['LayerName']['softmax']['Strategy'] = 'Stable'
 
     cfg = hls4ml.converters.create_backend_config(fpga_part='xc7z020clg400-1')
@@ -91,6 +91,8 @@ def main(args):
 
     # profiling / testing
     hls_model = hls4ml.converters.keras_to_hls(cfg)
+
+    hls4ml.utils.plot_model(hls_model, show_shapes=True, show_precision=True, to_file='model_hls4ml.png')
 
     from hls4ml.model.profiling import compare, numerical
     import matplotlib
@@ -124,7 +126,8 @@ def main(args):
     
     from sklearn.metrics import accuracy_score
     print("Keras Accuracy:  {}".format(accuracy_score(np.argmax(y_test, axis=1), np.argmax(y_keras, axis=1))))
-    print("hls4ml Accuracy: {}".format(accuracy_score(np.argmax(y_test, axis=1), np.argmax(y_hls, axis=1))))
+    print("hls4ml q_dense Accuracy: {}".format(accuracy_score(np.argmax(y_test, axis=1), np.argmax(hls4ml_trace['q_dense'], axis=1))))
+    print("hls4ml softmax Accuracy: {}".format(accuracy_score(np.argmax(y_test, axis=1), np.argmax(hls4ml_trace['softmax'], axis=1))))
 
     # Bitfile time 
     #hls_model.build(csim=False,synth=True,export=True)
