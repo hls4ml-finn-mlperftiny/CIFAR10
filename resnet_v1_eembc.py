@@ -269,7 +269,7 @@ def resnet_v1_eembc_quantized(input_shape=[32, 32, 3], num_classes=10, l1p=0, l2
                      kernel_quantizer=quantized_bits(logit_total_bits, logit_int_bits, alpha=1),
                      bias_quantizer=quantized_bits(logit_total_bits, logit_int_bits, alpha=1),
                      kernel_initializer='he_normal')(y)
-    outputs = QActivation(activation=quantized_bits(activation_total_bits, activation_int_bits))(outputs)
+    #outputs = QActivation(activation=quantized_bits(activation_total_bits, activation_int_bits))(outputs)
     outputs = Activation('softmax', name='softmax')(outputs)
 
     # Instantiate model.

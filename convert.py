@@ -47,7 +47,7 @@ def main(args):
     model.summary()
 
     _, (X_test, y_test) = cifar10.load_data()
-    X_test = np.ascontiguousarray(X_test[:100]/255.)
+    X_test = np.ascontiguousarray(X_test[:100]/256.)
     num_classes = 10
     y_test = tf.keras.utils.to_categorical(y_test[:100], num_classes)
 
@@ -58,23 +58,20 @@ def main(args):
     np.save('X_test.npy', X_test)
 
     import hls4ml
-    hls4ml.model.optimizer.OutputRoundingSaturationMode.layers = ['Dense', 'Conv2DBatchnorm', 'Activation', 'Input', 'ZeroPadding2D', 'Clone', 'Merge', 'Pooling2D', 'Softmax']
-    hls4ml.model.optimizer.OutputRoundingSaturationMode.rounding_mode = 'AP_RND'
-    hls4ml.model.optimizer.OutputRoundingSaturationMode.saturation_mode = 'AP_SAT'
     config = hls4ml.utils.config_from_keras_model(model, granularity='name')
     config['Model'] = {}
     config['Model']['ReuseFactor'] = our_config['convert']['ReuseFactor']
     config['Model']['Strategy'] = our_config['convert']['Strategy']
     config['Model']['Precision'] = our_config['convert']['Precision']
     for name in config['LayerName'].keys():
-        config['LayerName'][name]['Trace'] = True
+        config['LayerName'][name]['Trace'] = bool(our_config['convert']['Trace'])
         config['LayerName'][name]['ReuseFactor'] = our_config['convert']['ReuseFactor']
         config['LayerName'][name]['Precision'] = our_config['convert']['Precision']
         if 'activation' in name:
             config['LayerName'][name]['Precision'] = our_config['convert']['PrecisionActivation']
-    config['LayerName']['average_pooling2d']['accum_t'] = our_config['convert']['PrecisionAccumulator']
-    # custom config for softmax
-    config['LayerName']['softmax']['Strategy'] = 'Stable'
+    # custom configs
+    for name in our_config['convert']['Override'].keys():
+        config['LayerName'][name].update(our_config['convert']['Override'][name])
 
     cfg = hls4ml.converters.create_backend_config(fpga_part='xc7z020clg400-1')
     cfg['HLSConfig'] = config
@@ -94,40 +91,43 @@ def main(args):
 
     hls4ml.utils.plot_model(hls_model, show_shapes=True, show_precision=True, to_file='model_hls4ml.png')
 
-    from hls4ml.model.profiling import compare, numerical
-    import matplotlib
-    matplotlib.use('Agg')
-    import matplotlib.pyplot as plt
-
-    plt.figure()
-    wp, ap = numerical(model=model, hls_model=hls_model, X=X_test)
-    plt.show()
-    plt.savefig('profiling_numerical.png', dpi=300)
-
-    plt.figure()
-    cp = compare(keras_model=model, hls_model=hls_model, X=X_test, plot_type="dist_diff")
-    plt.show()
-    plt.savefig('profiling_compare.png', dpi=300)
-
-    y_hls, hls4ml_trace = hls_model.trace(X_test)
-    np.save('y_hls.npy', y_hls)
-    keras_trace = hls4ml.model.profiling.get_ymodel_keras(model, X_test)
-
-    for layer in hls4ml_trace.keys():
+    if bool(our_config['convert']['Trace']):
+        from hls4ml.model.profiling import compare, numerical
+        import matplotlib
+        matplotlib.use('Agg')
+        import matplotlib.pyplot as plt
+        
         plt.figure()
-        plt.scatter(hls4ml_trace[layer].flatten(), keras_trace[layer].flatten(), s=0.2)
-        min_x = min(np.amin(hls4ml_trace[layer]), np.amin(keras_trace[layer]))
-        max_x = max(np.amax(hls4ml_trace[layer]), np.amax(keras_trace[layer]))
-        plt.plot([min_x, max_x], [min_x, max_x], c='gray')
-        plt.xlabel('hls4ml {}'.format(layer))
-        plt.ylabel('QKeras {}'.format(layer))
+        wp, ap = numerical(model=model, hls_model=hls_model, X=X_test)
         plt.show()
-        plt.savefig('profiling_{}.png'.format(layer), dpi=300)
-    
+        plt.savefig('profiling_numerical.png', dpi=300)
+        
+        plt.figure()
+        cp = compare(keras_model=model, hls_model=hls_model, X=X_test, plot_type="dist_diff")
+        plt.show()
+        plt.savefig('profiling_compare.png', dpi=300)
+
+        y_hls, hls4ml_trace = hls_model.trace(X_test)
+        np.save('y_hls.npy', y_hls)
+        keras_trace = hls4ml.model.profiling.get_ymodel_keras(model, X_test)
+        
+        for layer in hls4ml_trace.keys():
+            plt.figure()
+            plt.scatter(hls4ml_trace[layer].flatten(), keras_trace[layer].flatten(), s=0.2)
+            min_x = min(np.amin(hls4ml_trace[layer]), np.amin(keras_trace[layer]))
+            max_x = max(np.amax(hls4ml_trace[layer]), np.amax(keras_trace[layer]))
+            plt.plot([min_x, max_x], [min_x, max_x], c='gray')
+            plt.xlabel('hls4ml {}'.format(layer))
+            plt.ylabel('QKeras {}'.format(layer))
+            plt.show()
+            plt.savefig('profiling_{}.png'.format(layer), dpi=300)
+    else:
+        hls_model.compile()
+        y_hls = hls_model.predict(X_test)
+
     from sklearn.metrics import accuracy_score
     print("Keras Accuracy:  {}".format(accuracy_score(np.argmax(y_test, axis=1), np.argmax(y_keras, axis=1))))
-    print("hls4ml q_dense Accuracy: {}".format(accuracy_score(np.argmax(y_test, axis=1), np.argmax(hls4ml_trace['q_dense'], axis=1))))
-    print("hls4ml softmax Accuracy: {}".format(accuracy_score(np.argmax(y_test, axis=1), np.argmax(hls4ml_trace['softmax'], axis=1))))
+    print("hls4ml Accuracy: {}".format(accuracy_score(np.argmax(y_test, axis=1), np.argmax(y_hls, axis=1))))
 
     # Bitfile time 
     #hls_model.build(csim=False,synth=True,export=True)

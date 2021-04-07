@@ -39,9 +39,27 @@ convert:
   XilinxPart: xc7z020clg400-1
   Backend: Pynq
   IOType: io_stream
-  Precision: ap_fixed<10,6,AP_RND,AP_SAT>
-  PrecisionActivation: ap_fixed<10,6,AP_RND,AP_SAT>
-  PrecisionAccumulator: ap_fixed<14,10,AP_RND,AP_SAT>
+  Precision: ap_fixed<10,7,AP_RND,AP_SAT>
+  PrecisionActivation: ap_ufixed<8,3,AP_RND,AP_SAT>
   ReuseFactor: 1024
+  Trace: 1
   ClockPeriod: 20
   Strategy: Resource
+  Override:
+    input_1:
+      Precision: ap_ufixed<8,1>
+    softmax:
+      Strategy: Stable
+      Precision: ap_ufixed<14,2,AP_RND,AP_SAT>
+      exp_table_t: ap_ufixed<18,8,AP_RND,AP_SAT>
+      inv_table_t: ap_fixed<18,8,AP_RND,AP_SAT>
+    average_pooling2d:
+      accum_t: ap_fixed<14,10,AP_RND,AP_SAT>
+    q_conv2d_batchnorm:
+      accum_t: ap_fixed<16,6,AP_RND,AP_SAT>
+    q_conv2d_batchnorm_1:
+      accum_t: ap_fixed<16,6,AP_RND,AP_SAT>
+    q_conv2d_batchnorm_2:
+      accum_t: ap_fixed<16,6,AP_RND,AP_SAT>
+    q_dense:
+      accum_t: ap_fixed<16,6,AP_RND,AP_SAT>

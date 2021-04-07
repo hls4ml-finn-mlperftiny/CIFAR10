@@ -1,3 +1,4 @@
+import setGPU
 import os
 import glob
 import sys
@@ -59,7 +60,7 @@ def main(args):
 
     # load dataset
     (X_train, y_train), (X_test, y_test) = cifar10.load_data()
-    X_train, X_test = X_train/255., X_test/255.
+    X_train, X_test = X_train/256., X_test/256.
     y_train = tf.keras.utils.to_categorical(y_train, num_classes)
     y_test = tf.keras.utils.to_categorical(y_test, num_classes)
 
