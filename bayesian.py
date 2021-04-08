@@ -43,7 +43,7 @@ def build_model(hp):
     model = resnet_v1_eembc(input_shape=[32, 32, 3], num_classes=10, l1p=0, l2p=1e-4,
                             num_filters=[hp_filters0_0, hp_filters0_1, 
                                          hp_filters1_0, hp_filters1_1,
-                                         hp_filters2_0, hp_filters2_0],
+                                         hp_filters2_0, hp_filters2_1],
                             kernel_sizes=[hp_kernelsize0_0, hp_kernelsize0_1, hp_kernelsize0_2,
                                           hp_kernelsize1_0, hp_kernelsize1_1, hp_kernelsize1_2,
                                           hp_kernelsize2_0, hp_kernelsize2_1, hp_kernelsize2_2],
