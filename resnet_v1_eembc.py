@@ -24,7 +24,8 @@ def resnet_v1_eembc(input_shape=[32, 32, 3], num_classes=10, l1p=0, l2p=1e-4,
                     strides=['111', # block 1
                              '212', # block 2
                              '212', # block 3
-                         ]):
+                    ],
+                    skip=True):
 
     # Input layer, change kernel size to 7x7 and strides to 2 for an official resnet
     inputs = Input(shape=input_shape)
@@ -56,7 +57,10 @@ def resnet_v1_eembc(input_shape=[32, 32, 3], num_classes=10, l1p=0, l2p=1e-4,
     y = BatchNormalization()(y)
   
     # Overall residual, connect weight layer and identity paths
-    x = Add()([x, y]) 
+    if skip:
+        x = Add()([x, y]) 
+    else:
+        x = y
     x = Activation('relu')(x)
 
     if len(num_filters) > 2 and num_filters[2] > 0 and strides[1] != '' and kernel_sizes[3] > 0:
@@ -87,7 +91,10 @@ def resnet_v1_eembc(input_shape=[32, 32, 3], num_classes=10, l1p=0, l2p=1e-4,
                    kernel_regularizer=l1_l2(l1=l1p,l2=l2p))(x)
         
         # Overall residual, connect weight layer and identity paths
-        x = Add()([x, y])
+        if skip:
+            x = Add()([x, y])
+        else:
+            x = y
         x = Activation('relu')(x)
         
     if len(num_filters) > 4 and num_filters[4] > 0 and strides[2] != '' and kernel_sizes[6] > 0:
@@ -118,7 +125,10 @@ def resnet_v1_eembc(input_shape=[32, 32, 3], num_classes=10, l1p=0, l2p=1e-4,
                    kernel_regularizer=l1_l2(l1=l1p,l2=l2p))(x)
         
         # Overall residual, connect weight layer and identity paths
-        x = Add()([x, y])
+        if skip:
+            x = Add()([x, y])
+        else:
+            x = y
         x = Activation('relu')(x)
         
     # Final classification layer.
@@ -147,7 +157,8 @@ def resnet_v1_eembc_quantized(input_shape=[32, 32, 3], num_classes=10, l1p=0, l2
                              '212', # block 2
                              '212', # block 3
                          ],
-                    logit_total_bits=7, logit_int_bits=0, activation_total_bits=7, activation_int_bits=3):
+                    logit_total_bits=7, logit_int_bits=0, activation_total_bits=7, activation_int_bits=3,
+                    skip=True):
 
     # Input layer, change kernel size to 7x7 and strides to 2 for an official resnet
     inputs = Input(shape=input_shape)
@@ -180,10 +191,13 @@ def resnet_v1_eembc_quantized(input_shape=[32, 32, 3], num_classes=10, l1p=0, l2
                   bias_quantizer=quantized_bits(logit_total_bits, logit_int_bits, alpha=1),
                   kernel_initializer='he_normal',
                   kernel_regularizer=l1_l2(l1=l1p,l2=l2p))(y)
-    y = QActivation(activation=quantized_bits(activation_total_bits, activation_int_bits))(y)
 
     # Overall residual, connect weight layer and identity paths
-    x = Add()([x, y]) 
+    if skip:
+        y = QActivation(activation=quantized_bits(activation_total_bits, activation_int_bits))(y)
+        x = Add()([x, y]) 
+    else: 
+        x = y
     x = QActivation(activation=quantized_relu(activation_total_bits, activation_int_bits))(x)
 
     if len(num_filters) > 2 and num_filters[2] > 0 and strides[1] != '' and kernel_sizes[3] > 0:
@@ -206,7 +220,6 @@ def resnet_v1_eembc_quantized(input_shape=[32, 32, 3], num_classes=10, l1p=0, l2
                     bias_quantizer=quantized_bits(logit_total_bits, logit_int_bits, alpha=1),
                     kernel_initializer='he_normal',
                     kernel_regularizer=l1_l2(l1=l1p,l2=l2p))(y)
-        y = QActivation(activation=quantized_bits(activation_total_bits, activation_int_bits))(y)
         
         # Adjust for change in dimension due to stride in identity
         x = QConv2D(num_filters[3],
@@ -220,7 +233,11 @@ def resnet_v1_eembc_quantized(input_shape=[32, 32, 3], num_classes=10, l1p=0, l2
         x = QActivation(activation=quantized_bits(activation_total_bits, activation_int_bits))(x)
 
         # Overall residual, connect weight layer and identity paths
-        x = Add()([x, y])
+        if skip:
+            y = QActivation(activation=quantized_bits(activation_total_bits, activation_int_bits))(y)
+            x = Add()([x, y])
+        else:
+            x = y
         x = QActivation(activation=quantized_relu(activation_total_bits, activation_int_bits))(x)
 
     if len(num_filters) > 4 and num_filters[4] > 0 and strides[2] != '' and kernel_sizes[6] > 0:
@@ -243,7 +260,6 @@ def resnet_v1_eembc_quantized(input_shape=[32, 32, 3], num_classes=10, l1p=0, l2
                     bias_quantizer=quantized_bits(logit_total_bits, logit_int_bits, alpha=1),
                     kernel_initializer='he_normal',
                     kernel_regularizer=l1_l2(l1=l1p,l2=l2p))(y)
-        y = QActivation(activation=quantized_bits(activation_total_bits, activation_int_bits))(y)
   
         # Adjust for change in dimension due to stride in identity
         x = QConv2D(num_filters[5],
@@ -257,7 +273,11 @@ def resnet_v1_eembc_quantized(input_shape=[32, 32, 3], num_classes=10, l1p=0, l2
         x = QActivation(activation=quantized_bits(activation_total_bits, activation_int_bits))(x)
         
         # Overall residual, connect weight layer and identity paths
-        x = Add()([x, y])
+        if skip:
+            y = QActivation(activation=quantized_bits(activation_total_bits, activation_int_bits))(y)
+            x = Add()([x, y])
+        else:
+            x = y
         x = QActivation(activation=quantized_relu(activation_total_bits, activation_int_bits))(x)
 
     # Final classification layer.

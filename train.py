@@ -37,6 +37,7 @@ def main(args):
     strides = config['model']['strides']
     l1p = float(config['model']['l1'])
     l2p = float(config['model']['l2'])
+    skip = bool(config['model']['skip'])
     batch_size = config['fit']['batch_size']
     num_epochs = config['fit']['epochs']
     verbose = config['fit']['verbose']
@@ -83,7 +84,8 @@ def main(args):
               'kernel_sizes': kernel_sizes,
               'strides': strides,
               'l1p': l1p,
-              'l2p': l2p}
+              'l2p': l2p,
+              'skip': skip}
 
     # pass quantization params
     if 'quantized' in model_name:

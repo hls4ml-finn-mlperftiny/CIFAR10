@@ -2,7 +2,7 @@ save_dir: resnet_v1_eembc_tiny
 
 model:
   name: resnet_v1_eembc
-  filters: 
+  filters:
   - 32
   - 32
   l1: 0
@@ -13,6 +13,7 @@ model:
   - 3
   strides:
   - '311'
+  skip: 1
 
 pruning:
   sparsity: 1.0 

@@ -25,6 +25,7 @@ model:
   - '111'
   - '212'
   - '212'
+  skip: 1
 
 
 pruning:
@@ -48,4 +49,5 @@ convert:
   IOType: io_stream
   Precision: ap_fixed<8,4>
   ReuseFactor: 2304
+  ClockPeriod: 20
   Strategy: Resource

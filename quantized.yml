@@ -13,6 +13,7 @@ model:
   - 3
   strides: 
   - '311'
+  skip: 1
 
 pruning:
   sparsity: 1.0
