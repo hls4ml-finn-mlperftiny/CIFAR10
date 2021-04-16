@@ -1,4 +1,5 @@
 import os
+import setGPU
 # edit depending on where Vivado is installed:
 # os.environ['PATH'] = '/<Xilinx installation directory>/Vivado/<version>/bin:' + os.environ['PATH']
 os.environ['PATH'] = '/opt/local/Xilinx/Vivado/2019.2/bin:' + os.environ['PATH']
@@ -45,11 +46,23 @@ def main(args):
 
     model = load_model(model_file_path, custom_objects=co)
     model.summary()
+    tf.keras.utils.plot_model(model,
+                              to_file="model.png",
+                              show_shapes=True,
+                              show_dtype=False,
+                              show_layer_names=False,
+                              rankdir="TB",
+                              expand_nested=False)
 
     _, (X_test, y_test) = cifar10.load_data()
-    X_test = np.ascontiguousarray(X_test[:100]/256.)
+    X_test = np.ascontiguousarray(X_test/256.)
     num_classes = 10
-    y_test = tf.keras.utils.to_categorical(y_test[:100], num_classes)
+    y_test = tf.keras.utils.to_categorical(y_test, num_classes)
+
+    # just use first 100
+    if bool(our_config['convert']['Trace']):
+        X_test = X_test[:100]
+        y_test = y_test[:100]
 
     y_keras = model.predict(X_test)
 
@@ -129,11 +142,12 @@ def main(args):
     print("Keras Accuracy:  {}".format(accuracy_score(np.argmax(y_test, axis=1), np.argmax(y_keras, axis=1))))
     print("hls4ml Accuracy: {}".format(accuracy_score(np.argmax(y_test, axis=1), np.argmax(y_hls, axis=1))))
 
-    # Bitfile time 
-    #hls_model.build(csim=False,synth=True,export=True)
-    #hls4ml.report.read_vivado_report(our_config['convert']['OutputDir'])
-    #if our_config['convert']['Backend'] == 'Pynq':
-    #    hls4ml.templates.PynqBackend.make_bitfile(hls_model)
+    # Bitfile time
+    if bool(our_config['convert']['Build']):
+        hls_model.build(csim=False,synth=True)#,export=True)
+        hls4ml.report.read_vivado_report(our_config['convert']['OutputDir'])
+        #if our_config['convert']['Backend'] == 'Pynq':
+        #    hls4ml.templates.PynqBackend.make_bitfile(hls_model)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
