@@ -9,7 +9,7 @@ from qkeras.qlayers import QDense, QActivation
 from qkeras.qconvolutional import QConv2D
 from qkeras.qconv2d_batchnorm import QConv2DBatchnorm
 from qkeras.qpooling import QAveragePooling2D
-from qkeras.quantizers import quantized_bits, quantized_relu
+import qkeras
 
 #define model
 def resnet_v1_eembc(input_shape=[32, 32, 3], num_classes=10, l1p=0, l2p=1e-4,
@@ -157,8 +157,13 @@ def resnet_v1_eembc_quantized(input_shape=[32, 32, 3], num_classes=10, l1p=0, l2
                              '212', # block 2
                              '212', # block 3
                          ],
-                    logit_total_bits=7, logit_int_bits=0, activation_total_bits=7, activation_int_bits=3,
+                    logit_total_bits=7, logit_int_bits=2, activation_total_bits=7, activation_int_bits=2,
+                    alpha=1, use_stochastic_rounding=False,
+                    logit_quantizer = 'quantized_bits', activation_quantizer = 'quantized_relu',
                     skip=True):
+
+    logit_quantizer = getattr(qkeras.quantizers,logit_quantizer)(logit_total_bits, logit_int_bits, alpha=alpha, use_stochastic_rounding=use_stochastic_rounding)
+    activation_quantizer = getattr(qkeras.quantizers,activation_quantizer)(activation_total_bits, activation_int_bits, use_stochastic_rounding=use_stochastic_rounding)
 
     # Input layer, change kernel size to 7x7 and strides to 2 for an official resnet
     inputs = Input(shape=input_shape)
@@ -166,11 +171,11 @@ def resnet_v1_eembc_quantized(input_shape=[32, 32, 3], num_classes=10, l1p=0, l2
                   kernel_size=kernel_sizes[0],
                   strides=int(strides[0][0]),
                   padding='same',
-                  kernel_quantizer=quantized_bits(logit_total_bits, logit_int_bits, alpha=1),
-                  bias_quantizer=quantized_bits(logit_total_bits, logit_int_bits, alpha=1),
+                  kernel_quantizer=logit_quantizer,
+                  bias_quantizer=logit_quantizer,
                   kernel_initializer='he_normal',
                   kernel_regularizer=l1_l2(l1=l1p,l2=l2p))(inputs)
-    x = QActivation(activation=quantized_relu(activation_total_bits, activation_int_bits))(x)
+    x = QActivation(activation=activation_quantizer)(x)
 
     # First stack
     # Weight layers
@@ -178,27 +183,27 @@ def resnet_v1_eembc_quantized(input_shape=[32, 32, 3], num_classes=10, l1p=0, l2
                   kernel_size=kernel_sizes[1],
                   strides=int(strides[0][1]),
                   padding='same',
-                  kernel_quantizer=quantized_bits(logit_total_bits, logit_int_bits, alpha=1),
-                  bias_quantizer=quantized_bits(logit_total_bits, logit_int_bits, alpha=1),
+                  kernel_quantizer=logit_quantizer,
+                  bias_quantizer=logit_quantizer,
                   kernel_initializer='he_normal',
                   kernel_regularizer=l1_l2(l1=l1p,l2=l2p))(x)
-    y = QActivation(activation=quantized_relu(activation_total_bits, activation_int_bits))(y)
+    y = QActivation(activation=activation_quantizer)(y)
     y = QConv2DBatchnorm(num_filters[0],
                   kernel_size=kernel_sizes[2],
                   strides=int(strides[0][2]),
                   padding='same',
-                  kernel_quantizer=quantized_bits(logit_total_bits, logit_int_bits, alpha=1),
-                  bias_quantizer=quantized_bits(logit_total_bits, logit_int_bits, alpha=1),
+                  kernel_quantizer=logit_quantizer,
+                  bias_quantizer=logit_quantizer,
                   kernel_initializer='he_normal',
                   kernel_regularizer=l1_l2(l1=l1p,l2=l2p))(y)
 
     # Overall residual, connect weight layer and identity paths
     if skip:
-        y = QActivation(activation=quantized_bits(activation_total_bits, activation_int_bits))(y)
+        y = QActivation(activation=logit_quantizer)(y)
         x = Add()([x, y]) 
     else: 
         x = y
-    x = QActivation(activation=quantized_relu(activation_total_bits, activation_int_bits))(x)
+    x = QActivation(activation=activation_quantizer)(x)
 
     if len(num_filters) > 2 and num_filters[2] > 0 and strides[1] != '' and kernel_sizes[3] > 0:
         # Second stack
@@ -207,17 +212,17 @@ def resnet_v1_eembc_quantized(input_shape=[32, 32, 3], num_classes=10, l1p=0, l2
                     kernel_size=kernel_sizes[3],
                     strides=int(strides[1][0]),
                     padding='same',
-                    kernel_quantizer=quantized_bits(logit_total_bits, logit_int_bits, alpha=1),
-                    bias_quantizer=quantized_bits(logit_total_bits, logit_int_bits, alpha=1),
+                    kernel_quantizer=logit_quantizer,
+                    bias_quantizer=logit_quantizer,
                     kernel_initializer='he_normal',
                     kernel_regularizer=l1_l2(l1=l1p,l2=l2p))(x)
-        y = QActivation(activation=quantized_relu(activation_total_bits, activation_int_bits))(y)
+        y = QActivation(activation=activation_quantizer)(y)
         y = QConv2DBatchnorm(num_filters[3],
                     kernel_size=kernel_sizes[4],
                     strides=int(strides[1][1]),
                     padding='same',
-                    kernel_quantizer=quantized_bits(logit_total_bits, logit_int_bits, alpha=1),
-                    bias_quantizer=quantized_bits(logit_total_bits, logit_int_bits, alpha=1),
+                    kernel_quantizer=logit_quantizer,
+                    bias_quantizer=logit_quantizer,
                     kernel_initializer='he_normal',
                     kernel_regularizer=l1_l2(l1=l1p,l2=l2p))(y)
         
@@ -226,19 +231,19 @@ def resnet_v1_eembc_quantized(input_shape=[32, 32, 3], num_classes=10, l1p=0, l2
                     kernel_size=kernel_sizes[5],
                     strides=int(strides[1][2]),
                     padding='same',
-                    kernel_quantizer=quantized_bits(logit_total_bits, logit_int_bits, alpha=1),
-                    bias_quantizer=quantized_bits(logit_total_bits, logit_int_bits, alpha=1),
+                    kernel_quantizer=logit_quantizer,
+                    bias_quantizer=logit_quantizer,
                     kernel_initializer='he_normal',
                     kernel_regularizer=l1_l2(l1=l1p,l2=l2p))(x)
-        x = QActivation(activation=quantized_bits(activation_total_bits, activation_int_bits))(x)
+        x = QActivation(activation=logit_quantizer)(x)
 
         # Overall residual, connect weight layer and identity paths
         if skip:
-            y = QActivation(activation=quantized_bits(activation_total_bits, activation_int_bits))(y)
+            y = QActivation(activation=logit_quantizer)(y)
             x = Add()([x, y])
         else:
             x = y
-        x = QActivation(activation=quantized_relu(activation_total_bits, activation_int_bits))(x)
+        x = QActivation(activation=activation_quantizer)(x)
 
     if len(num_filters) > 4 and num_filters[4] > 0 and strides[2] != '' and kernel_sizes[6] > 0:
         # Third stack
@@ -247,17 +252,17 @@ def resnet_v1_eembc_quantized(input_shape=[32, 32, 3], num_classes=10, l1p=0, l2
                     kernel_size=kernel_sizes[6],
                     strides=int(strides[2][0]),
                     padding='same',
-                    kernel_quantizer=quantized_bits(logit_total_bits, logit_int_bits, alpha=1),
-                    bias_quantizer=quantized_bits(logit_total_bits, logit_int_bits, alpha=1),
+                    kernel_quantizer=logit_quantizer,
+                    bias_quantizer=logit_quantizer,
                     kernel_initializer='he_normal',
                     kernel_regularizer=l1_l2(l1=l1p,l2=l2p))(x)
-        y = QActivation(activation=quantized_relu(activation_total_bits, activation_int_bits))(y)
+        y = QActivation(activation=activation_quantizer)(y)
         y = QConv2DBatchnorm(num_filters[5],
                     kernel_size=kernel_sizes[7],
                     strides=int(strides[2][1]),
                     padding='same',
-                    kernel_quantizer=quantized_bits(logit_total_bits, logit_int_bits, alpha=1),
-                    bias_quantizer=quantized_bits(logit_total_bits, logit_int_bits, alpha=1),
+                    kernel_quantizer=logit_quantizer,
+                    bias_quantizer=logit_quantizer,
                     kernel_initializer='he_normal',
                     kernel_regularizer=l1_l2(l1=l1p,l2=l2p))(y)
   
@@ -266,30 +271,29 @@ def resnet_v1_eembc_quantized(input_shape=[32, 32, 3], num_classes=10, l1p=0, l2
                     kernel_size=kernel_sizes[8],
                     strides=int(strides[2][2]),
                     padding='same',
-                    kernel_quantizer=quantized_bits(logit_total_bits, logit_int_bits, alpha=1),
-                    bias_quantizer=quantized_bits(logit_total_bits, logit_int_bits, alpha=1),
+                    kernel_quantizer=logit_quantizer,
+                    bias_quantizer=logit_quantizer,
                     kernel_initializer='he_normal',
                     kernel_regularizer=l1_l2(l1=l1p,l2=l2p))(x)
-        x = QActivation(activation=quantized_bits(activation_total_bits, activation_int_bits))(x)
+        x = QActivation(activation=logit_quantizer)(x)
         
         # Overall residual, connect weight layer and identity paths
         if skip:
-            y = QActivation(activation=quantized_bits(activation_total_bits, activation_int_bits))(y)
+            y = QActivation(activation=logit_quantizer)(y)
             x = Add()([x, y])
         else:
             x = y
-        x = QActivation(activation=quantized_relu(activation_total_bits, activation_int_bits))(x)
+        x = QActivation(activation=activation_quantizer)(x)
 
     # Final classification layer.
     pool_size = int(np.amin(x.shape[1:3]))
-    x = QAveragePooling2D(pool_size=pool_size, quantizer=quantized_bits(activation_total_bits, activation_int_bits))(x)
+    x = QAveragePooling2D(pool_size=pool_size, quantizer=logit_quantizer)(x)
     y = Flatten()(x)
     # Changed output to separate QDense but did not quantize softmax as specified
     outputs = QDense(num_classes,
-                     kernel_quantizer=quantized_bits(logit_total_bits, logit_int_bits, alpha=1),
-                     bias_quantizer=quantized_bits(logit_total_bits, logit_int_bits, alpha=1),
+                     kernel_quantizer=logit_quantizer,
+                     bias_quantizer=logit_quantizer,
                      kernel_initializer='he_normal')(y)
-    #outputs = QActivation(activation=quantized_bits(activation_total_bits, activation_int_bits))(outputs)
     outputs = Activation('softmax', name='softmax')(outputs)
 
     # Instantiate model.

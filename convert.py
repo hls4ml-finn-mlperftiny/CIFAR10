@@ -21,6 +21,7 @@ from qkeras.quantizers import quantized_bits, quantized_relu
 from train import yaml_load
 from tensorflow.keras.datasets import cifar10
 import argparse
+from sklearn.metrics import accuracy_score
 
 def print_dict(d, indent=0):
     align=20
@@ -126,19 +127,21 @@ def main(args):
         
         for layer in hls4ml_trace.keys():
             plt.figure()
-            plt.scatter(hls4ml_trace[layer].flatten(), keras_trace[layer].flatten(), s=0.2)
-            min_x = min(np.amin(hls4ml_trace[layer]), np.amin(keras_trace[layer]))
-            max_x = max(np.amax(hls4ml_trace[layer]), np.amax(keras_trace[layer]))
+            klayer = layer
+            if '_alpha' in layer:
+                klayer = layer.replace('_alpha','')
+            plt.scatter(hls4ml_trace[layer].flatten(), keras_trace[klayer].flatten(), s=0.2)
+            min_x = min(np.amin(hls4ml_trace[layer]), np.amin(keras_trace[klayer]))
+            max_x = max(np.amax(hls4ml_trace[layer]), np.amax(keras_trace[klayer]))
             plt.plot([min_x, max_x], [min_x, max_x], c='gray')
             plt.xlabel('hls4ml {}'.format(layer))
-            plt.ylabel('QKeras {}'.format(layer))
+            plt.ylabel('QKeras {}'.format(klayer))
             plt.show()
             plt.savefig('profiling_{}.png'.format(layer), dpi=300)
     else:
         hls_model.compile()
         y_hls = hls_model.predict(X_test)
 
-    from sklearn.metrics import accuracy_score
     print("Keras Accuracy:  {}".format(accuracy_score(np.argmax(y_test, axis=1), np.argmax(y_keras, axis=1))))
     print("hls4ml Accuracy: {}".format(accuracy_score(np.argmax(y_test, axis=1), np.argmax(y_hls, axis=1))))
 

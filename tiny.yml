@@ -12,8 +12,8 @@ model:
   - 3
   - 3
   strides:
-  - '311'
-  skip: 1
+  - '343'
+  skip: 0
 
 pruning:
   sparsity: 1.0 
@@ -37,7 +37,8 @@ convert:
   Precision: ap_fixed<16,6,AP_RND,AP_SAT>
   PrecisionActivation: ap_ufixed<16,6,AP_RND,AP_SAT>
   ReuseFactor: 1024
-  Trace: 1
+  Trace: 0
+  Build: 0
   ClockPeriod: 20
   Strategy: Resource
   Override:

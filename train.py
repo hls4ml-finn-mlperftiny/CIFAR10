@@ -53,6 +53,10 @@ def main(args):
         logit_int_bits = config["quantization"]["logit_int_bits"]
         activation_total_bits = config["quantization"]["activation_total_bits"]
         activation_int_bits = config["quantization"]["activation_int_bits"]
+        alpha = config["quantization"]["alpha"]
+        use_stochastic_rounding = config["quantization"]["use_stochastic_rounding"]
+        logit_quantizer = config["quantization"]["logit_quantizer"]
+        activation_quantizer = config["quantization"]["activation_quantizer"]
 
     # optimizer
     optimizer = getattr(tf.keras.optimizers,config['fit']['compile']['optimizer'])
@@ -93,6 +97,10 @@ def main(args):
         kwargs["logit_int_bits"] = logit_int_bits
         kwargs["activation_total_bits"] = activation_total_bits
         kwargs["activation_int_bits"] = activation_int_bits
+        kwargs["alpha"] = alpha
+        kwargs["use_stochastic_rounding"] = use_stochastic_rounding
+        kwargs["logit_quantizer"] = logit_quantizer
+        kwargs["activation_quantizer"] = activation_quantizer
 
     # define model
     model = getattr(resnet_v1_eembc,model_name)(**kwargs)
