@@ -1,4 +1,4 @@
-save_dir: resnet_v1_eembc_quantized_test
+save_dir: resnet_v1_eembc_quantized
 
 model:
   name: resnet_v1_eembc_quantized
@@ -30,42 +30,48 @@ fit:
   verbose: 1
 
 quantization:
-  logit_total_bits: 7
+  logit_total_bits: 8
   logit_int_bits: 2
   logit_quantizer: quantized_bits
-  activation_total_bits: 7
+  activation_total_bits: 8
   activation_int_bits: 2
   activation_quantizer: quantized_relu
   alpha: 1
   use_stochastic_rounding: 0
 
 convert:
+  RemoveSoftmax: 1
   OutputDir: my-hls-test-quantized
   XilinxPart: xc7z020clg400-1
-  Backend: Pynq
+  Backend: Vivado
   IOType: io_stream
   Precision: ap_fixed<10,7,AP_RND,AP_SAT>
   PrecisionActivation: ap_ufixed<8,3,AP_RND,AP_SAT>
   ReuseFactor: 16384
   Trace: 0
-  Build: 0
+  Build: 1
   ClockPeriod: 20
   Strategy: Resource
   Override:
     input_1:
       Precision: ap_ufixed<8,1>
-    softmax:
-      Strategy: Stable
-      Precision: ap_ufixed<14,2,AP_RND,AP_SAT>
-      exp_table_t: ap_ufixed<18,8,AP_RND,AP_SAT>
-      inv_table_t: ap_ufixed<18,8,AP_RND,AP_SAT>
-    average_pooling2d:
-      accum_t: ap_fixed<14,10,AP_RND,AP_SAT>
     q_conv2d_batchnorm:
-      accum_t: ap_fixed<16,6,AP_RND,AP_SAT>
+      accum_t: ap_fixed<14,6>
+      Precision:
+        weight: ap_fixed<8,3>
+        bias: ap_fixed<8,3>
     q_conv2d_batchnorm_1:
-      accum_t: ap_fixed<16,6,AP_RND,AP_SAT>
+      accum_t: ap_fixed<14,6>
+      Precision: 
+        weight: ap_fixed<8,3>
+        bias: ap_fixed<8,3>
     q_conv2d_batchnorm_2:
-      accum_t: ap_fixed<16,6,AP_RND,AP_SAT>
+      accum_t: ap_fixed<14,6>
+      Precision:
+        weight: ap_fixed<8,3>
+        bias: ap_fixed<8,3>
     q_dense:
-      accum_t: ap_fixed<16,6,AP_RND,AP_SAT>
+      accum_t: ap_fixed<12,6>
+      Precision:
+        weight: ap_fixed<8,3>
+        bias: ap_fixed<8,3>

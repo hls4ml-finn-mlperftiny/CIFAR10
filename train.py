@@ -97,7 +97,8 @@ def main(args):
         kwargs["logit_int_bits"] = logit_int_bits
         kwargs["activation_total_bits"] = activation_total_bits
         kwargs["activation_int_bits"] = activation_int_bits
-        kwargs["alpha"] = alpha
+        kwargs["alpha"] = None if alpha == 'None' else alpha
+        print(kwargs["alpha"] is None)
         kwargs["use_stochastic_rounding"] = use_stochastic_rounding
         kwargs["logit_quantizer"] = logit_quantizer
         kwargs["activation_quantizer"] = activation_quantizer
