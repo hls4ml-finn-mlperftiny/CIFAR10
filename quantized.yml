@@ -45,7 +45,7 @@ convert:
   XilinxPart: xc7z020clg400-1
   Backend: Vivado
   IOType: io_stream
-  Precision: ap_fixed<10,7,AP_RND,AP_SAT>
+  Precision: ap_fixed<9,6>
   PrecisionActivation: ap_ufixed<8,3,AP_RND,AP_SAT>
   ReuseFactor: 16384
   Trace: 0
