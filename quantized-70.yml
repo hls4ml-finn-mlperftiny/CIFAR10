@@ -1,4 +1,4 @@
-save_dir: resnet_v1_eembc_quantized_test_3_stack_4_stride
+save_dir: resnet_v1_eembc_FIRST
 
 model:
   name: resnet_v1_eembc_quantized
@@ -52,7 +52,7 @@ quantization:
   use_stochastic_rounding: 0
 
 convert:
-  OutputDir: my-hls-test-quantized_3_stack_4_stride
+  OutputDir: my-hls-test-quantized_FIRST
   XilinxPart: xc7z020clg400-1
   Backend: Pynq
   IOType: io_stream
@@ -64,28 +64,20 @@ convert:
   ClockPeriod: 20
   Strategy: Resource
   Override:
-    input_1:
+    input_2:
       Precision: ap_ufixed<8,1>
     softmax:
       Strategy: Stable
       Precision: ap_ufixed<14,2,AP_RND,AP_SAT>
       exp_table_t: ap_ufixed<18,8,AP_RND,AP_SAT>
       inv_table_t: ap_ufixed<18,8,AP_RND,AP_SAT>
-    average_pooling2d:
+    average_pooling2d_1:
       accum_t: ap_fixed<14,10,AP_RND,AP_SAT>
-    q_conv2d_batchnorm:
-      accum_t: ap_fixed<16,6,AP_RND,AP_SAT>
-    q_conv2d_batchnorm_1:
-      accum_t: ap_fixed<16,6,AP_RND,AP_SAT>
-    q_conv2d_batchnorm_2:
-      accum_t: ap_fixed<16,6,AP_RND,AP_SAT>
     q_conv2d_batchnorm_3:
       accum_t: ap_fixed<16,6,AP_RND,AP_SAT>
     q_conv2d_batchnorm_4:
       accum_t: ap_fixed<16,6,AP_RND,AP_SAT>
     q_conv2d_batchnorm_5:
       accum_t: ap_fixed<16,6,AP_RND,AP_SAT>
-    q_conv2d_batchnorm_6:
-      accum_t: ap_fixed<16,6,AP_RND,AP_SAT>
-    q_dense:
+    q_dense_1:
       accum_t: ap_fixed<16,6,AP_RND,AP_SAT>
