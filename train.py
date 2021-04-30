@@ -38,6 +38,7 @@ def main(args):
     l1p = float(config['model']['l1'])
     l2p = float(config['model']['l2'])
     skip = bool(config['model']['skip'])
+    avg_pooling = bool(config['model']['avg_pooling'])
     batch_size = config['fit']['batch_size']
     num_epochs = config['fit']['epochs']
     verbose = config['fit']['verbose']
@@ -89,7 +90,8 @@ def main(args):
               'strides': strides,
               'l1p': l1p,
               'l2p': l2p,
-              'skip': skip}
+              'skip': skip,
+              'avg_pooling': avg_pooling}
 
     # pass quantization params
     if 'quantized' in model_name:

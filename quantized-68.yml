@@ -1,4 +1,4 @@
-save_dir: resnet_v1_eembc_quantized_test_conv_down_sample_2
+save_dir: resnet_v1_eembc_quantized_68_acc
 
 model:
   name: resnet_v1_eembc_quantized
@@ -29,6 +29,7 @@ model:
   - '212'
   - '420'
   skip: 0
+  avg_pooling: 0
 
 pruning:
   sparsity: 1.0
@@ -55,7 +56,7 @@ quantization:
   use_stochastic_rounding: 0
 
 convert:
-  OutputDir: my-hls-test-quantized_3_conv_down_sample_2
+  OutputDir: my-hls-test-quantized_68_acc
   XilinxPart: xc7z020clg400-1
   Backend: Pynq
   IOType: io_stream

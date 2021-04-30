@@ -161,7 +161,7 @@ def resnet_v1_eembc_quantized(input_shape=[32, 32, 3], num_classes=10, l1p=0, l2
                     alpha=1, use_stochastic_rounding=False,
                     logit_quantizer = 'quantized_bits', activation_quantizer = 'quantized_relu',
                     skip=True, 
-                    average_pooling=False):
+                    avg_pooling=False):
 
     logit_quantizer = getattr(qkeras.quantizers,logit_quantizer)(logit_total_bits, logit_int_bits, alpha=alpha, use_stochastic_rounding=use_stochastic_rounding)
     activation_quantizer = getattr(qkeras.quantizers,activation_quantizer)(activation_total_bits, activation_int_bits, use_stochastic_rounding=use_stochastic_rounding)
@@ -287,7 +287,7 @@ def resnet_v1_eembc_quantized(input_shape=[32, 32, 3], num_classes=10, l1p=0, l2
         x = QActivation(activation=activation_quantizer)(x)
 
     if len(num_filters) > 6 and num_filters[6] > 0 and strides[3] != '' and kernel_sizes[9] > 0:
-        # Fourth stack
+        # Fourth stack (not complete stack)
         # Weight layers
         y = QConv2DBatchnorm(num_filters[6],
                     kernel_size=kernel_sizes[9],
@@ -320,11 +320,7 @@ def resnet_v1_eembc_quantized(input_shape=[32, 32, 3], num_classes=10, l1p=0, l2
         x = QActivation(activation=activation_quantizer)(x)
 
     # Final classification layer.
-    if average_pooling:
-        pool_size = int(np.amin(x.shape[1:3]))
-        x = QAveragePooling2D(pool_size=pool_size, quantizer=logit_quantizer)(x)
-    # Final classification layer.
-    if average_pooling:
+    if avg_pooling:
         pool_size = int(np.amin(x.shape[1:3]))
         x = QAveragePooling2D(pool_size=pool_size, quantizer=logit_quantizer)(x)
 
