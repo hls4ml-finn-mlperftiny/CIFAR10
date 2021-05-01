@@ -196,10 +196,7 @@ def resnet_v1_eembc_quantized(input_shape=[32, 32, 3], num_classes=10, l1p=0, l2
                     skip=True,
                     avg_pooling=False):
 
-    if alpha is None:
-        logit_quantizer = getattr(qkeras.quantizers,logit_quantizer)(logit_total_bits, logit_int_bits, use_stochastic_rounding=use_stochastic_rounding)
-    else:
-        logit_quantizer = getattr(qkeras.quantizers,logit_quantizer)(logit_total_bits, logit_int_bits, alpha=alpha, use_stochastic_rounding=use_stochastic_rounding)
+    logit_quantizer = getattr(qkeras.quantizers,logit_quantizer)(logit_total_bits, logit_int_bits, alpha=alpha, use_stochastic_rounding=use_stochastic_rounding)
     activation_quantizer = getattr(qkeras.quantizers,activation_quantizer)(activation_total_bits, activation_int_bits, use_stochastic_rounding=use_stochastic_rounding)
 
     # Input layer, change kernel size to 7x7 and strides to 2 for an official resnet
@@ -359,6 +356,7 @@ def resnet_v1_eembc_quantized(input_shape=[32, 32, 3], num_classes=10, l1p=0, l2
     pool_size = int(np.amin(x.shape[1:3]))
     if pool_size > 1 and avg_pooling:
         x = QAveragePooling2D(pool_size=pool_size, quantizer=logit_quantizer)(x)
+
     y = Flatten()(x)
     # Changed output to separate QDense but did not quantize softmax as specified
     outputs = QDense(num_classes,
