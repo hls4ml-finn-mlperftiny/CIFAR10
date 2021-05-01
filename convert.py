@@ -2,7 +2,7 @@ import os
 import setGPU
 # edit depending on where Vivado is installed:
 # os.environ['PATH'] = '/<Xilinx installation directory>/Vivado/<version>/bin:' + os.environ['PATH']
-os.environ['PATH'] = '/opt/local/Xilinx/Vivado/2019.2/bin:' + os.environ['PATH']
+os.environ['PATH'] = '/xilinx/Vivado/2019.2/bin:' + os.environ['PATH']
 import tensorflow as tf
 from qkeras.utils import _add_supported_quantized_objects
 import hls4ml

@@ -25,7 +25,8 @@ def resnet_v1_eembc(input_shape=[32, 32, 3], num_classes=10, l1p=0, l2p=1e-4,
                              '212', # block 2
                              '212', # block 3
                     ],
-                    skip=True):
+                    skip=True,
+                    avg_pooling=False):
 
     # Input layer, change kernel size to 7x7 and strides to 2 for an official resnet
     inputs = Input(shape=input_shape)
@@ -130,10 +131,41 @@ def resnet_v1_eembc(input_shape=[32, 32, 3], num_classes=10, l1p=0, l2p=1e-4,
         else:
             x = y
         x = Activation('relu')(x)
+
+    if len(num_filters) > 6 and num_filters[6] > 0 and strides[3] != '' and kernel_sizes[9] > 0:
+        # Fourth stack (not complete stack)
+        # Weight layers
+        y = Conv2D(num_filters[6],
+                    kernel_size=kernel_sizes[9],
+                    strides=int(strides[3][0]),
+                    padding='same',
+                    kernel_initializer='he_normal',
+                    kernel_regularizer=l1_l2(l1=l1p,l2=l2p))(x)
+        y = BatchNormalization()(y)
+        x = Activation('relu')(y)
+
+    if len(num_filters) > 7 and num_filters[7] > 0 and strides[3] != '' and kernel_sizes[10] > 0:
+        y = x
+        y = Conv2D(num_filters[7],
+                    kernel_size=kernel_sizes[10],
+                    strides=int(strides[3][1]),
+                    padding='same',
+                    kernel_initializer='he_normal',
+                    kernel_regularizer=l1_l2(l1=l1p,l2=l2p))(y)
+        y = BatchNormalization()(y)
+        x = Activation('relu')(y)
+
+        # Overall residual, connect weight layer and identity paths
+        if skip:
+            y = QActivation(activation=logit_quantizer)(y)
+            x = Add()([x, y])
+        else:
+            x = y
+        x = QActivation(activation=activation_quantizer)(x)
         
     # Final classification layer.
     pool_size = int(np.amin(x.shape[1:3]))
-    if pool_size > 1:
+    if pool_size > 1 and avg_pooling:
         x = AveragePooling2D(pool_size=pool_size)(x)
     y = Flatten()(x)
     y = Dense(num_classes,
@@ -161,7 +193,8 @@ def resnet_v1_eembc_quantized(input_shape=[32, 32, 3], num_classes=10, l1p=0, l2
                     logit_total_bits=7, logit_int_bits=2, activation_total_bits=7, activation_int_bits=2,
                     alpha=1, use_stochastic_rounding=False,
                     logit_quantizer = 'quantized_bits', activation_quantizer = 'quantized_relu',
-                    skip=True):
+                    skip=True,
+                    avg_pooling=False):
 
     if alpha is None:
         logit_quantizer = getattr(qkeras.quantizers,logit_quantizer)(logit_total_bits, logit_int_bits, use_stochastic_rounding=use_stochastic_rounding)
@@ -289,9 +322,42 @@ def resnet_v1_eembc_quantized(input_shape=[32, 32, 3], num_classes=10, l1p=0, l2
             x = y
         x = QActivation(activation=activation_quantizer)(x)
 
+    if len(num_filters) > 6 and num_filters[6] > 0 and strides[3] != '' and kernel_sizes[9] > 0:
+        # Fourth stack (not complete stack)
+        # Weight layers
+        y = QConv2DBatchnorm(num_filters[6],
+                    kernel_size=kernel_sizes[9],
+                    strides=int(strides[3][0]),
+                    padding='same',
+                    kernel_quantizer=logit_quantizer,
+                    bias_quantizer=logit_quantizer,
+                    kernel_initializer='he_normal',
+                    kernel_regularizer=l1_l2(l1=l1p,l2=l2p))(x)
+        x = QActivation(activation=activation_quantizer)(y)
+
+    if len(num_filters) > 7 and num_filters[7] > 0 and strides[3] != '' and kernel_sizes[10] > 0:
+        y = x
+        y = QConv2DBatchnorm(num_filters[7],
+                    kernel_size=kernel_sizes[10],
+                    strides=int(strides[3][1]),
+                    padding='same',
+                    kernel_quantizer=logit_quantizer,
+                    bias_quantizer=logit_quantizer,
+                    kernel_initializer='he_normal',
+                    kernel_regularizer=l1_l2(l1=l1p,l2=l2p))(y)
+        x = QActivation(activation=logit_quantizer)(x)
+
+        # Overall residual, connect weight layer and identity paths
+        if skip:
+            y = QActivation(activation=logit_quantizer)(y)
+            x = Add()([x, y])
+        else:
+            x = y
+        x = QActivation(activation=activation_quantizer)(x)
+
     # Final classification layer.
     pool_size = int(np.amin(x.shape[1:3]))
-    if pool_size > 1:
+    if pool_size > 1 and avg_pooling:
         x = QAveragePooling2D(pool_size=pool_size, quantizer=logit_quantizer)(x)
     y = Flatten()(x)
     # Changed output to separate QDense but did not quantize softmax as specified
