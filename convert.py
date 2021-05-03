@@ -22,6 +22,7 @@ from train import yaml_load
 from tensorflow.keras.datasets import cifar10
 import argparse
 from sklearn.metrics import accuracy_score
+from tensorflow.keras.models import Model
 
 def print_dict(d, indent=0):
     align=20
@@ -46,6 +47,13 @@ def main(args):
     _add_supported_quantized_objects(co)    
 
     model = load_model(model_file_path, custom_objects=co)
+    if bool(our_config['convert']['RemoveSoftmax']):
+        input_layer = model.inputs
+        output_layer = None
+        for layer in model.layers:
+            if layer.name == 'softmax': output_layer = layer.input
+        model = Model(inputs=input_layer, outputs=output_layer)
+        
     model.summary()
     tf.keras.utils.plot_model(model,
                               to_file="model.png",
@@ -62,8 +70,8 @@ def main(args):
 
     # just use first 100
     if bool(our_config['convert']['Trace']):
-        X_test = X_test[:10000]
-        y_test = y_test[:10000]
+        X_test = X_test[:100]
+        y_test = y_test[:100]
 
     y_keras = model.predict(X_test)
 
@@ -73,6 +81,11 @@ def main(args):
 
     import hls4ml
     config = hls4ml.utils.config_from_keras_model(model, granularity='name')
+
+    print("-----------------------------------")
+    print_dict(config)
+    print("-----------------------------------")
+
     config['Model'] = {}
     config['Model']['ReuseFactor'] = our_config['convert']['ReuseFactor']
     config['Model']['Strategy'] = our_config['convert']['Strategy']
@@ -82,7 +95,8 @@ def main(args):
         config['LayerName'][name]['ReuseFactor'] = our_config['convert']['ReuseFactor']
         config['LayerName'][name]['Precision'] = our_config['convert']['Precision']
         if 'activation' in name:
-            config['LayerName'][name]['Precision'] = our_config['convert']['PrecisionActivation']
+            config['LayerName'][name]['Precision'] = {}
+            config['LayerName'][name]['Precision']['result'] = our_config['convert']['PrecisionActivation']
     # custom configs
     for name in our_config['convert']['Override'].keys():
         config['LayerName'][name].update(our_config['convert']['Override'][name])
@@ -91,6 +105,8 @@ def main(args):
     cfg['HLSConfig'] = config
     cfg['IOType'] = our_config['convert']['IOType']
     cfg['Backend'] = our_config['convert']['Backend']
+    cfg['InputData'] = 'input_data.dat'
+    cfg['OutputPredictions'] = 'output_predictions.dat'
     cfg['Interface'] = 's_axilite' # or 'm_axi'
     cfg['ClockPeriod'] = our_config['convert']['ClockPeriod']
     cfg['KerasModel'] = model
@@ -147,13 +163,12 @@ def main(args):
 
     # Bitfile time
     if bool(our_config['convert']['Build']):
-        hls_model.build(csim=False,synth=True)#,export=True)
+        np.savetxt('input_data.dat', X_test[:1].reshape(1, -1), fmt='%f', delimiter=' ' )       
+        np.savetxt('output_predictions.dat', y_keras[:1].reshape(1, -1), fmt='%f', delimiter=' ')
+        hls_model.build(csim=True,synth=True,vsynth=True)#,cosim=True,export=True)
         hls4ml.report.read_vivado_report(our_config['convert']['OutputDir'])
-        #if our_config['convert']['Backend'] == 'Pynq':
-        #    hls4ml.templates.PynqBackend.make_bitfile(hls_model)
-
-    print("Keras Accuracy:  {}".format(accuracy_score(np.argmax(y_test, axis=1), np.argmax(y_keras, axis=1))))
-    print("hls4ml Accuracy: {}".format(accuracy_score(np.argmax(y_test, axis=1), np.argmax(y_hls, axis=1))))
+        if our_config['convert']['Backend'] == 'Pynq':
+            hls4ml.templates.PynqBackend.make_bitfile(hls_model)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
