@@ -76,3 +76,4 @@ convert:
       Precision:
         weight: ap_fixed<8,3>
         bias: ap_fixed<8,3>
+        result: ap_fixed<8,6>
