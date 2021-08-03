@@ -26,7 +26,8 @@ model:
   - '212'
   - '212'
   skip: 1
-
+  avg_pooling: 1
+  final_activation: 1
 
 pruning:
   sparsity: 1.0 
@@ -43,11 +44,18 @@ fit:
   verbose: 1
 
 convert:
+  RemoveSoftmax: 1
   OutputDir: my-hls-test
   XilinxPart: xc7z020clg400-1
-  Backend: Pynq
+  Backend: Vivado
   IOType: io_stream
-  Precision: ap_fixed<8,4>
-  ReuseFactor: 2304
+  Precision: ap_fixed<16,6>
+  PrecisionActivation: ap_fixed<16,6>
+  ReuseFactor: 16384
+  Trace: 0
+  Build: 0
   ClockPeriod: 20
   Strategy: Resource
+  Override:
+    input_1:
+      Precision: ap_ufixed<8,1>

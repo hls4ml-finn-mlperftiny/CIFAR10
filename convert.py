@@ -53,6 +53,7 @@ def main(args):
         for layer in model.layers:
             if layer.name == 'softmax': output_layer = layer.input
         model = Model(inputs=input_layer, outputs=output_layer)
+        model.save(model_file_path.replace('.h5','_nosoftmax.h5'))
         
     model.summary()
     tf.keras.utils.plot_model(model,
@@ -70,10 +71,12 @@ def main(args):
 
     # just use first 100
     if bool(our_config['convert']['Trace']):
-        X_test = X_test[:100]
-        y_test = y_test[:100]
+    if True:
+        X_test = X_test[:10]
+        y_test = y_test[:10]
 
     y_keras = model.predict(X_test)
+    print("Keras Accuracy:  {}".format(accuracy_score(np.argmax(y_test, axis=1), np.argmax(y_keras, axis=1))))
 
     np.save('y_keras.npy', y_keras)
     np.save('y_test.npy', y_test)
@@ -165,7 +168,7 @@ def main(args):
     if bool(our_config['convert']['Build']):
         np.savetxt('input_data.dat', X_test[:1].reshape(1, -1), fmt='%f', delimiter=' ' )       
         np.savetxt('output_predictions.dat', y_keras[:1].reshape(1, -1), fmt='%f', delimiter=' ')
-        hls_model.build(csim=True,synth=True,vsynth=True)#,cosim=True,export=True)
+        hls_model.build(reset=False,csim=True,cosim=False,validation=False,synth=True,vsynth=False,export=False)
         hls4ml.report.read_vivado_report(our_config['convert']['OutputDir'])
         if our_config['convert']['Backend'] == 'Pynq':
             hls4ml.templates.PynqBackend.make_bitfile(hls_model)

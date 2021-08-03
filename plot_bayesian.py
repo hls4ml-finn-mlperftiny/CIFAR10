@@ -5,7 +5,6 @@ import argparse
 import tensorflow as tf
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from sklearn.metrics import roc_auc_score
-from resnet_v1_eembc import resnet_v1_eembc
 import yaml
 import csv
 import setGPU
@@ -122,7 +121,9 @@ def main(args):
                                'strides0', 'strides1', 'strides2'], 
                        inplace=True, keep='first')
     # print all models with < 1 MFLOPs
-    print(df[df['flops']<1e6].to_string())
+    #print(df[df['flops']<1e6].to_string())
+    # print all models with < 20 MFLOPs
+    print(df[df['flops']<2e7].to_string())
 
 
 if __name__ == "__main__":

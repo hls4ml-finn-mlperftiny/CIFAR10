@@ -194,10 +194,14 @@ def resnet_v1_eembc_quantized(input_shape=[32, 32, 3], num_classes=10, l1p=0, l2
                     alpha=1, use_stochastic_rounding=False,
                     logit_quantizer = 'quantized_bits', activation_quantizer = 'quantized_relu',
                     skip=True,
-                    avg_pooling=False):
+                    avg_pooling=False,
+                    final_activation=True):
 
     logit_quantizer = getattr(qkeras.quantizers,logit_quantizer)(logit_total_bits, logit_int_bits, alpha=alpha, use_stochastic_rounding=use_stochastic_rounding)
-    activation_quantizer = getattr(qkeras.quantizers,activation_quantizer)(activation_total_bits, activation_int_bits, use_stochastic_rounding=use_stochastic_rounding)
+    if activation_quantizer == 'binary_tanh':
+        activation_quantizer = qkeras.quantizers.binary_tanh
+    else:
+        activation_quantizer = getattr(qkeras.quantizers,activation_quantizer)(activation_total_bits, activation_int_bits, use_stochastic_rounding=use_stochastic_rounding)
 
     # Input layer, change kernel size to 7x7 and strides to 2 for an official resnet
     inputs = Input(shape=input_shape)
@@ -363,7 +367,8 @@ def resnet_v1_eembc_quantized(input_shape=[32, 32, 3], num_classes=10, l1p=0, l2
                      kernel_quantizer=logit_quantizer,
                      bias_quantizer=logit_quantizer,
                      kernel_initializer='he_normal')(y)
-    outputs = Activation('softmax', name='softmax')(outputs)
+    if final_activation:
+        outputs = Activation('softmax', name='softmax')(outputs)
 
     # Instantiate model.
     model = Model(inputs=inputs, outputs=outputs)

@@ -13,9 +13,21 @@ import kerop
 from train import get_lr_schedule_func
 import kerastuner
 from tensorflow.keras.datasets import cifar10
+import itertools
 
-filter_space = [2, 4, 8, 16, 32]
+filter_space = [2, 4, 8, 16, 32, 64]
 kernelsize_space = [1, 2, 3, 4]
+stride_space = [''.join(i) for i in itertools.product(['1', '2', '3', '4'], repeat = 3)] #space for skip=False
+skip = False
+avg_pooling = False
+epochs = 10
+batch_size = 32
+logit_total_bits = 8
+logit_int_bits = 2
+activation_total_bits = 8
+activation_int_bits = 2
+activate_final = True
+loss='categorical_crossentropy'
 
 # define cnn model
 def build_model(hp):
@@ -36,9 +48,14 @@ def build_model(hp):
     hp_kernelsize2_1 = hp.Choice('kernelsize2_1', kernelsize_space)
     hp_kernelsize2_2 = hp.Choice('kernelsize2_2', kernelsize_space)
 
-    hp_strides0 = hp.Choice('strides0', ['111', '211', '244', '311', '334', '343', '344', '411', '424', '433', '434', '442', '443', '444'])
-    hp_strides1 = hp.Choice('strides1', ['111', '122', '133', '144', '212', '224', '313', '414'])
-    hp_strides2 = hp.Choice('strides2', ['111', '122', '133', '144', '212', '224', '313', '414'])
+    if skip:
+        hp_strides0 = hp.Choice('strides0', ['111', '211', '244', '311', '334', '343', '344', '411', '424', '433', '434', '442', '443', '444'])
+        hp_strides1 = hp.Choice('strides1', ['111', '122', '133', '144', '212', '224', '313', '414'])
+        hp_strides2 = hp.Choice('strides2', ['111', '122', '133', '144', '212', '224', '313', '414'])
+    else:
+        hp_strides0 = hp.Choice('strides0', stride_space)
+        hp_strides1 = hp.Choice('strides1', stride_space)
+        hp_strides2 = hp.Choice('strides2', stride_space)
     
     model = resnet_v1_eembc_quantized(input_shape=[32, 32, 3], num_classes=10, l1p=0, l2p=1e-4,
                             num_filters=[hp_filters0_0, hp_filters0_1, 
@@ -50,16 +67,18 @@ def build_model(hp):
                             strides=[hp_strides0, 
                                      hp_strides1, 
                                      hp_strides2], 
-                            avg_pooling=False,
-                            skip=False,
-                            logit_total_bits=8, logit_int_bits=2, activation_total_bits=8, activation_int_bits=2,
+                            avg_pooling=avg_pooling,
+                            skip=skip,
+                            logit_total_bits=logit_total_bits, logit_int_bits=logit_int_bits, 
+                            activation_total_bits=activation_total_bits, activation_int_bits=activation_int_bits,
                             alpha=1, use_stochastic_rounding=False,
-                            logit_quantizer = 'quantized_bits', activation_quantizer = 'quantized_relu',
+                            logit_quantizer='quantized_bits', activation_quantizer='quantized_relu',
+                            activate_final=True
                         )
     # compile model
     optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
     model.compile(optimizer=optimizer, 
-                  loss='categorical_crossentropy',
+                  loss=loss,
                   metrics=['accuracy'])
     return model
 
@@ -71,7 +90,7 @@ def main(args):
     y_train = tf.keras.utils.to_categorical(y_train, num_classes)
     y_test = tf.keras.utils.to_categorical(y_test, num_classes)
     
-    # define data generator                                                                                                     
+    # define data generator                  
     datagen = ImageDataGenerator(
         rotation_range=15,
         width_shift_range=0.1,
@@ -119,8 +138,8 @@ def main(args):
 
     callbacks = [LearningRateScheduler(lr_schedule_func, verbose=1)]
 
-    tuner.search(datagen.flow(X_train, y_train, batch_size=32),                
-                 epochs=10,
+    tuner.search(datagen.flow(X_train, y_train, batch_size=batch_size),
+                 epochs=epochs,
                  validation_data=(X_test, y_test),
                  callbacks=callbacks,
                  verbose=1

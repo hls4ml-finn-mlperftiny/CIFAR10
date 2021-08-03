@@ -1,7 +1,7 @@
-save_dir: resnet_v1_eembc_tiny
+save_dir: resnet_v1_eembc_quantized_tiny
 
 model:
-  name: resnet_v1_eembc
+  name: resnet_v1_eembc_quantized
   filters:
   - 32
   - 32
@@ -12,11 +12,13 @@ model:
   - 3
   - 3
   strides:
-  - '343'
+  - '411'
   skip: 0
+  avg_pooling: 0
+  final_activation: 0
 
 pruning:
-  sparsity: 1.0 
+  sparsity: 1.0
 
 fit:
   compile:
@@ -29,33 +31,50 @@ fit:
   batch_size: 32
   verbose: 1
 
+quantization:
+  logit_total_bits: 8
+  logit_int_bits: 2
+  logit_quantizer: quantized_bits
+  activation_total_bits: 8
+  activation_int_bits: 2
+  activation_quantizer: quantized_relu
+  alpha: 1
+  use_stochastic_rounding: 0
+
 convert:
-  OutputDir: my-hls-test-tiny
+  RemoveSoftmax: 1
+  OutputDir: my-hls-test-quantized-tiny
   XilinxPart: xc7z020clg400-1
-  Backend: Pynq
+  Backend: Vivado
   IOType: io_stream
-  Precision: ap_fixed<16,6,AP_RND,AP_SAT>
-  PrecisionActivation: ap_ufixed<16,6,AP_RND,AP_SAT>
-  ReuseFactor: 1024
+  Precision: ap_fixed<9,6>
+  PrecisionActivation: ap_ufixed<8,3,AP_RND,AP_SAT>
+  ReuseFactor: 16384
   Trace: 0
-  Build: 0
+  Build: 1
   ClockPeriod: 20
   Strategy: Resource
   Override:
     input_1:
-      Precision: ap_ufixed<8,1>
-    softmax:
-      Strategy: Stable
-      Precision: ap_ufixed<18,2,AP_RND,AP_SAT>
-      exp_table_t: ap_ufixed<18,8,AP_RND,AP_SAT>
-      inv_table_t: ap_fixed<18,8,AP_RND,AP_SAT>
-    average_pooling2d:
-      accum_t: ap_fixed<20,10,AP_RND,AP_SAT>
-    conv2d:
-      accum_t: ap_fixed<16,6,AP_RND,AP_SAT>
-    conv2d_1:
-      accum_t: ap_fixed<16,6,AP_RND,AP_SAT>
-    conv2d_2:
-      accum_t: ap_fixed<16,6,AP_RND,AP_SAT>
-    dense:
-      accum_t: ap_fixed<16,6,AP_RND,AP_SAT>
+      Precision: ap_ufixed<8,0>
+    q_conv2d_batchnorm:
+      accum_t: ap_fixed<14,6>
+      Precision:
+        weight: ap_fixed<8,3>
+        bias: ap_fixed<8,3>
+    q_conv2d_batchnorm_1:
+      accum_t: ap_fixed<14,6>
+      Precision:
+        weight: ap_fixed<8,3>
+        bias: ap_fixed<8,3>
+    q_conv2d_batchnorm_2:
+      accum_t: ap_fixed<14,6>
+      Precision:
+        weight: ap_fixed<8,3>
+        bias: ap_fixed<8,3>
+    q_dense:
+      accum_t: ap_fixed<12,6>
+      Precision:
+        weight: ap_fixed<8,3>
+        bias: ap_fixed<8,3>
+        result: ap_fixed<8,6>
