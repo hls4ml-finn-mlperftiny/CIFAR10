@@ -10,12 +10,13 @@ import resnet_v1_eembc
 import yaml
 import csv
 import setGPU
-#from keras_flops import get_flops #(different flop calculation)
+# from keras_flops import get_flops #(different flop calculation)
 import kerop
 from tensorflow.keras.datasets import cifar10
 from train import get_lr_schedule_func, yaml_load
 from tensorflow.keras.models import load_model
 from tensorflow.keras.losses import KLDivergence, CategoricalCrossentropy
+
 
 class Distiller(tf.keras.Model):
     def __init__(self, student, teacher):
@@ -43,7 +44,7 @@ class Distiller(tf.keras.Model):
                 predictions and ground-truth
             distillation_loss_fn: Loss function of difference between soft
                 student predictions and soft teacher predictions
-            alpha: weight to teacher_loss_fn 
+            alpha: weight to teacher_loss_fn
             beta: weight to student_loss_fn
             gamma: weight to distillation_loss_fn
             temperature: Temperature for softening probability distributions.
@@ -91,7 +92,7 @@ class Distiller(tf.keras.Model):
         # Return a dict of performance
         results = {m.name: m.result() for m in self.metrics}
         results.update(
-            {"student_loss": student_loss, 
+            {"student_loss": student_loss,
              "distillation_loss": distillation_loss,
              "teacher_loss": teacher_loss}
         )
@@ -125,7 +126,7 @@ class Distiller(tf.keras.Model):
 def main(args):
 
     # parameters
-    input_shape = [32,32,3]
+    input_shape = [32, 32, 3]
     num_classes = 10
     config = yaml_load(args.config)
     num_filters = config['model']['filters']
@@ -157,7 +158,7 @@ def main(args):
         activation_quantizer = config["quantization"]["activation_quantizer"]
 
     # optimizer
-    optimizer = getattr(tf.keras.optimizers,config['fit']['compile']['optimizer'])
+    optimizer = getattr(tf.keras.optimizers, config['fit']['compile']['optimizer'])
     initial_lr = config['fit']['compile']['initial_lr']
     lr_decay = config['fit']['compile']['lr_decay']
 
@@ -202,15 +203,15 @@ def main(args):
         kwargs["activation_quantizer"] = activation_quantizer
 
     # define model
-    student = getattr(resnet_v1_eembc,model_name)(**kwargs)
-    #student.load_weights(model_load_path)
+    student = getattr(resnet_v1_eembc, model_name)(**kwargs)
+    # student.load_weights(model_load_path)
 
     # print model summary
     print('#################')
     print('# MODEL SUMMARY #')
     print('#################')
     print(student.summary())
-    print('#################') 
+    print('#################')
 
     # load baseline
     teacher = load_model('resnet_v1_eembc/model_best.h5')
@@ -225,7 +226,7 @@ def main(args):
         metrics=['accuracy'],
         student_loss_fn=CategoricalCrossentropy(),
         teacher_loss_fn=CategoricalCrossentropy(),
-        distillation_loss_fn=CategoricalCrossentropy(),#KLDivergence(),
+        distillation_loss_fn=CategoricalCrossentropy(),  # KLDivergence(),
         alpha=0,
         beta=0.1,
         gamma=0.9,
@@ -240,16 +241,15 @@ def main(args):
     callbacks = [ModelCheckpoint(model_file_path, monitor='val_accuracy', verbose=verbose, save_best_only=True, save_weights_only=True),
                  EarlyStopping(monitor='val_accuracy', patience=patience, verbose=verbose, restore_best_weights=True),
                  LearningRateScheduler(lr_schedule_func, verbose=verbose),
-    ]
+                 ]
 
     # train
     history = distiller.fit(datagen.flow(X_train, y_train, batch_size=batch_size),
-                        steps_per_epoch=X_train.shape[0] // batch_size,
-                        epochs=num_epochs,
-                        validation_data=(X_test, y_test),
-                        callbacks=callbacks,
-                        verbose=verbose)
-
+                            steps_per_epoch=X_train.shape[0] // batch_size,
+                            epochs=num_epochs,
+                            validation_data=(X_test, y_test),
+                            callbacks=callbacks,
+                            verbose=verbose)
 
     # restore "best" model
     distiller.load_weights(model_file_path)
@@ -259,17 +259,17 @@ def main(args):
 
     # evaluate with test dataset and share same prediction result
     evaluation = distiller.evaluate(X_test, y_test)
-    
+
     auc = roc_auc_score(y_test, y_pred, average='weighted', multi_class='ovr')
 
     print('Model test accuracy = %.4f' % evaluation[0])
     print('Model test weighted average AUC = %.4f' % auc)
-        
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('-c', '--config', type=str, default = "baseline.yml", help="specify yaml config")
+    parser.add_argument('-c', '--config', type=str, default="baseline.yml", help="specify yaml config")
 
     args = parser.parse_args()
 
     main(args)
-

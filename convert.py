@@ -1,31 +1,31 @@
+from tensorflow.keras.models import Model
+from sklearn.metrics import accuracy_score
+import argparse
+from tensorflow.keras.datasets import cifar10
+from train import yaml_load
+from qkeras.quantizers import quantized_bits, quantized_relu
+from qkeras.qlayers import QDense, QActivation
+from tensorflow.keras.regularizers import l1
+from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.layers import Activation
+from tensorflow.keras.models import Sequential
+from sklearn.preprocessing import LabelEncoder, StandardScaler
+from sklearn.model_selection import train_test_split
+from sklearn.datasets import fetch_openml
+from tensorflow.keras.utils import to_categorical
+import numpy as np
+import hls4ml
+from qkeras.utils import _add_supported_quantized_objects
+import tensorflow as tf
 import os
 import setGPU
 # edit depending on where Vivado is installed:
 # os.environ['PATH'] = '/<Xilinx installation directory>/Vivado/<version>/bin:' + os.environ['PATH']
 os.environ['PATH'] = '/xilinx/Vivado/2019.2/bin:' + os.environ['PATH']
-import tensorflow as tf
-from qkeras.utils import _add_supported_quantized_objects
-import hls4ml
-import numpy as np
-from tensorflow.keras.utils import to_categorical
-from sklearn.datasets import fetch_openml
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import LabelEncoder, StandardScaler
 
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Activation
-from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.regularizers import l1
-from qkeras.qlayers import QDense, QActivation
-from qkeras.quantizers import quantized_bits, quantized_relu
-from train import yaml_load
-from tensorflow.keras.datasets import cifar10
-import argparse
-from sklearn.metrics import accuracy_score
-from tensorflow.keras.models import Model
 
 def print_dict(d, indent=0):
-    align=20
+    align = 20
     for key, value in d.items():
         print('  ' * indent + str(key), end='')
         if isinstance(value, dict):
@@ -33,7 +33,8 @@ def print_dict(d, indent=0):
             print_dict(value, indent+1)
         else:
             print(':' + ' ' * (20 - len(key) - 2 * indent) + str(value))
-            
+
+
 def main(args):
     # parameters
     our_config = yaml_load(args.config)
@@ -44,17 +45,18 @@ def main(args):
     from tensorflow.keras.models import load_model
     from qkeras.utils import _add_supported_quantized_objects
     co = {}
-    _add_supported_quantized_objects(co)    
+    _add_supported_quantized_objects(co)
 
     model = load_model(model_file_path, custom_objects=co)
     if bool(our_config['convert']['RemoveSoftmax']):
         input_layer = model.inputs
         output_layer = None
         for layer in model.layers:
-            if layer.name == 'softmax': output_layer = layer.input
+            if layer.name == 'softmax':
+                output_layer = layer.input
         model = Model(inputs=input_layer, outputs=output_layer)
-        model.save(model_file_path.replace('.h5','_nosoftmax.h5'))
-        
+        model.save(model_file_path.replace('.h5', '_nosoftmax.h5'))
+
     model.summary()
     tf.keras.utils.plot_model(model,
                               to_file="model.png",
@@ -110,7 +112,7 @@ def main(args):
     cfg['Backend'] = our_config['convert']['Backend']
     cfg['InputData'] = 'input_data.dat'
     cfg['OutputPredictions'] = 'output_predictions.dat'
-    cfg['Interface'] = 's_axilite' # or 'm_axi'
+    cfg['Interface'] = 's_axilite'  # or 'm_axi'
     cfg['ClockPeriod'] = our_config['convert']['ClockPeriod']
     cfg['KerasModel'] = model
     cfg['OutputDir'] = our_config['convert']['OutputDir']
@@ -129,12 +131,12 @@ def main(args):
         import matplotlib
         matplotlib.use('Agg')
         import matplotlib.pyplot as plt
-        
+
         plt.figure()
         wp, ap = numerical(model=model, hls_model=hls_model, X=X_test)
         plt.show()
         plt.savefig('profiling_numerical.png', dpi=300)
-        
+
         plt.figure()
         cp = compare(keras_model=model, hls_model=hls_model, X=X_test, plot_type="dist_diff")
         plt.show()
@@ -143,12 +145,12 @@ def main(args):
         y_hls, hls4ml_trace = hls_model.trace(X_test)
         np.save('y_hls.npy', y_hls)
         keras_trace = hls4ml.model.profiling.get_ymodel_keras(model, X_test)
-        
+
         for layer in hls4ml_trace.keys():
             plt.figure()
             klayer = layer
             if '_alpha' in layer:
-                klayer = layer.replace('_alpha','')
+                klayer = layer.replace('_alpha', '')
             plt.scatter(hls4ml_trace[layer].flatten(), keras_trace[klayer].flatten(), s=0.2)
             min_x = min(np.amin(hls4ml_trace[layer]), np.amin(keras_trace[klayer]))
             max_x = max(np.amax(hls4ml_trace[layer]), np.amax(keras_trace[klayer]))
@@ -166,16 +168,17 @@ def main(args):
 
     # Bitfile time
     if bool(our_config['convert']['Build']):
-        np.savetxt('input_data.dat', X_test[:1].reshape(1, -1), fmt='%f', delimiter=' ' )       
+        np.savetxt('input_data.dat', X_test[:1].reshape(1, -1), fmt='%f', delimiter=' ')
         np.savetxt('output_predictions.dat', y_keras[:1].reshape(1, -1), fmt='%f', delimiter=' ')
-        hls_model.build(reset=False,csim=True,cosim=False,validation=False,synth=True,vsynth=False,export=False)
+        hls_model.build(reset=False, csim=True, cosim=False, validation=False, synth=True, vsynth=False, export=False)
         hls4ml.report.read_vivado_report(our_config['convert']['OutputDir'])
         if our_config['convert']['Backend'] == 'Pynq':
             hls4ml.templates.PynqBackend.make_bitfile(hls_model)
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('-c', '--config', type=str, default = "baseline.yml", help="specify yaml config")
+    parser.add_argument('-c', '--config', type=str, default="baseline.yml", help="specify yaml config")
 
     args = parser.parse_args()
 

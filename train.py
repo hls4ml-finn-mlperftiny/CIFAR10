@@ -10,9 +10,10 @@ import resnet_v1_eembc
 import yaml
 import csv
 import setGPU
-#from keras_flops import get_flops #(different flop calculation)
+# from keras_flops import get_flops #(different flop calculation)
 import kerop
 from tensorflow.keras.datasets import cifar10
+
 
 def get_lr_schedule_func(initial_lr, lr_decay):
 
@@ -21,15 +22,17 @@ def get_lr_schedule_func(initial_lr, lr_decay):
 
     return lr_schedule_func
 
+
 def yaml_load(config):
     with open(config) as stream:
         param = yaml.safe_load(stream)
     return param
 
+
 def main(args):
 
     # parameters
-    input_shape = [32,32,3]
+    input_shape = [32, 32, 3]
     num_classes = 10
     config = yaml_load(args.config)
     num_filters = config['model']['filters']
@@ -60,7 +63,7 @@ def main(args):
         activation_quantizer = config["quantization"]["activation_quantizer"]
 
     # optimizer
-    optimizer = getattr(tf.keras.optimizers,config['fit']['compile']['optimizer'])
+    optimizer = getattr(tf.keras.optimizers, config['fit']['compile']['optimizer'])
     initial_lr = config['fit']['compile']['initial_lr']
     lr_decay = config['fit']['compile']['lr_decay']
 
@@ -72,7 +75,7 @@ def main(args):
         y_train = tf.keras.utils.to_categorical(y_train, num_classes)
         y_test = tf.keras.utils.to_categorical(y_test, num_classes)
     elif loss == 'squared_hinge':
-        y_train = tf.keras.utils.to_categorical(y_train, num_classes) * 2 - 1 # -1 or 1 for hinge loss
+        y_train = tf.keras.utils.to_categorical(y_train, num_classes) * 2 - 1  # -1 or 1 for hinge loss
         y_test = tf.keras.utils.to_categorical(y_test, num_classes) * 2 - 1
 
     # define data generator
@@ -111,15 +114,15 @@ def main(args):
         kwargs["activation_quantizer"] = activation_quantizer
 
     # define model
-    model = getattr(resnet_v1_eembc,model_name)(**kwargs)
+    model = getattr(resnet_v1_eembc, model_name)(**kwargs)
 
     # print model summary
     print('#################')
     print('# MODEL SUMMARY #')
     print('#################')
     print(model.summary())
-    print('#################') 
-    
+    print('#################')
+
     # analyze FLOPs (see https://github.com/kentaroy47/keras-Opcounter)
     layer_name, layer_flops, inshape, weights = kerop.profile(model)
 
@@ -155,7 +158,7 @@ def main(args):
     callbacks = [ModelCheckpoint(model_file_path, monitor='val_accuracy', verbose=verbose, save_best_only=True),
                  EarlyStopping(monitor='val_accuracy', patience=patience, verbose=verbose, restore_best_weights=True),
                  LearningRateScheduler(lr_schedule_func, verbose=verbose),
-    ]
+                 ]
 
     # train
     history = model.fit(datagen.flow(X_train, y_train, batch_size=batch_size),
@@ -165,7 +168,6 @@ def main(args):
                         callbacks=callbacks,
                         verbose=verbose)
 
-
     # restore "best" model
     model.load_weights(model_file_path)
 
@@ -174,17 +176,17 @@ def main(args):
 
     # evaluate with test dataset and share same prediction results
     evaluation = model.evaluate(X_test, y_test)
-    
+
     auc = roc_auc_score(y_test, y_pred, average='weighted', multi_class='ovr')
 
     print('Model test accuracy = %.3f' % evaluation[1])
     print('Model test weighted average AUC = %.3f' % auc)
-        
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('-c', '--config', type=str, default = "baseline.yml", help="specify yaml config")
+    parser.add_argument('-c', '--config', type=str, default="baseline.yml", help="specify yaml config")
 
     args = parser.parse_args()
 
     main(args)
-

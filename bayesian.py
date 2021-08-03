@@ -17,7 +17,7 @@ import itertools
 
 filter_space = [2, 4, 8, 16, 32, 64]
 kernelsize_space = [1, 2, 3, 4]
-stride_space = [''.join(i) for i in itertools.product(['1', '2', '3', '4'], repeat = 3)] #space for skip=False
+stride_space = [''.join(i) for i in itertools.product(['1', '2', '3', '4'], repeat=3)]  # space for skip=False
 skip = False
 avg_pooling = False
 epochs = 10
@@ -27,9 +27,11 @@ logit_int_bits = 2
 activation_total_bits = 8
 activation_int_bits = 2
 activate_final = True
-loss='categorical_crossentropy'
+loss = 'categorical_crossentropy'
 
 # define cnn model
+
+
 def build_model(hp):
     # default 3 stacks
     hp_filters0_0 = hp.Choice('filters0_0', filter_space)
@@ -56,31 +58,32 @@ def build_model(hp):
         hp_strides0 = hp.Choice('strides0', stride_space)
         hp_strides1 = hp.Choice('strides1', stride_space)
         hp_strides2 = hp.Choice('strides2', stride_space)
-    
+
     model = resnet_v1_eembc_quantized(input_shape=[32, 32, 3], num_classes=10, l1p=0, l2p=1e-4,
-                            num_filters=[hp_filters0_0, hp_filters0_1, 
-                                         hp_filters1_0, hp_filters1_1,
-                                         hp_filters2_0, hp_filters2_1],
-                            kernel_sizes=[hp_kernelsize0_0, hp_kernelsize0_1, hp_kernelsize0_2,
-                                          hp_kernelsize1_0, hp_kernelsize1_1, hp_kernelsize1_2,
-                                          hp_kernelsize2_0, hp_kernelsize2_1, hp_kernelsize2_2],
-                            strides=[hp_strides0, 
-                                     hp_strides1, 
-                                     hp_strides2], 
-                            avg_pooling=avg_pooling,
-                            skip=skip,
-                            logit_total_bits=logit_total_bits, logit_int_bits=logit_int_bits, 
-                            activation_total_bits=activation_total_bits, activation_int_bits=activation_int_bits,
-                            alpha=1, use_stochastic_rounding=False,
-                            logit_quantizer='quantized_bits', activation_quantizer='quantized_relu',
-                            activate_final=True
-                        )
+                                      num_filters=[hp_filters0_0, hp_filters0_1,
+                                                   hp_filters1_0, hp_filters1_1,
+                                                   hp_filters2_0, hp_filters2_1],
+                                      kernel_sizes=[hp_kernelsize0_0, hp_kernelsize0_1, hp_kernelsize0_2,
+                                                    hp_kernelsize1_0, hp_kernelsize1_1, hp_kernelsize1_2,
+                                                    hp_kernelsize2_0, hp_kernelsize2_1, hp_kernelsize2_2],
+                                      strides=[hp_strides0,
+                                               hp_strides1,
+                                               hp_strides2],
+                                      avg_pooling=avg_pooling,
+                                      skip=skip,
+                                      logit_total_bits=logit_total_bits, logit_int_bits=logit_int_bits,
+                                      activation_total_bits=activation_total_bits, activation_int_bits=activation_int_bits,
+                                      alpha=1, use_stochastic_rounding=False,
+                                      logit_quantizer='quantized_bits', activation_quantizer='quantized_relu',
+                                      activate_final=True
+                                      )
     # compile model
     optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
-    model.compile(optimizer=optimizer, 
+    model.compile(optimizer=optimizer,
                   loss=loss,
                   metrics=['accuracy'])
     return model
+
 
 def main(args):
 
@@ -89,8 +92,8 @@ def main(args):
 
     y_train = tf.keras.utils.to_categorical(y_train, num_classes)
     y_test = tf.keras.utils.to_categorical(y_test, num_classes)
-    
-    # define data generator                  
+
+    # define data generator
     datagen = ImageDataGenerator(
         rotation_range=15,
         width_shift_range=0.1,
@@ -98,16 +101,16 @@ def main(args):
         horizontal_flip=True,
     )
 
-    tunerClass = getattr(kerastuner.tuners,args.tuner)
+    tunerClass = getattr(kerastuner.tuners, args.tuner)
     hp = kerastuner.HyperParameters()
-    if args.stacks==2:
+    if args.stacks == 2:
         hp.Fixed('filters2_0', 0)
         hp.Fixed('filters2_1', 0)
         hp.Fixed('kernelsize2_0', 0)
         hp.Fixed('kernelsize2_1', 0)
         hp.Fixed('kernelsize2_2', 0)
         hp.Fixed('strides2', '')
-    elif args.stacks==1:
+    elif args.stacks == 1:
         hp.Fixed('filters1_0', 0)
         hp.Fixed('filters1_1', 0)
         hp.Fixed('filters2_0', 0)
@@ -143,14 +146,15 @@ def main(args):
                  validation_data=(X_test, y_test),
                  callbacks=callbacks,
                  verbose=1
-             )
+                 )
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('-t', '--tuner', choices=['RandomSearch','BayesianOptimization'], default = "RandomSearch", help="specify tuner")
-    parser.add_argument('-p', '--project-dir', type=str, default = 'rs_resnet_v1_eembc', help = 'specify project dir')
-    parser.add_argument('-m', '--max-trials', type=int, default = 100, help = 'specify max trials')
-    parser.add_argument('-s', '--stacks', type=int, default = 3, help = 'specify number of stacks')
+    parser.add_argument('-t', '--tuner', choices=['RandomSearch', 'BayesianOptimization'], default="RandomSearch", help="specify tuner")
+    parser.add_argument('-p', '--project-dir', type=str, default='rs_resnet_v1_eembc', help='specify project dir')
+    parser.add_argument('-m', '--max-trials', type=int, default=100, help='specify max trials')
+    parser.add_argument('-s', '--stacks', type=int, default=3, help='specify number of stacks')
 
     args = parser.parse_args()
 
