@@ -116,7 +116,7 @@ def main(args):
                                               io_type=io_type, driver=driver)
     else:
         part = our_config['convert']['XilinxPart']
-        cfg = hls4ml.converters.create_config(backend=backend, part=part, clock_period=clock_period, 
+        cfg = hls4ml.converters.create_config(backend=backend, part=part, clock_period=clock_period,
                                               io_type=io_type)
     cfg['HLSConfig'] = config
     cfg['InputData'] = 'input_data.dat'

@@ -14,10 +14,12 @@ import kerop
 from tensorflow.keras.datasets import cifar10
 from tensorflow.keras.layers.experimental.preprocessing import RandomCrop
 random_crop_model = tf.keras.models.Sequential()
-random_crop_model.add(RandomCrop(32, 32, input_shape=(32,32,3,)))
+random_crop_model.add(RandomCrop(32, 32, input_shape=(32, 32, 3,)))
+
 
 def random_crop(x):
     return random_crop_model.predict(x)
+
 
 def get_lr_schedule_func(initial_lr, lr_decay):
 
@@ -67,7 +69,6 @@ def main(args):
         activation_quantizer = config["quantization"]["activation_quantizer"]
         final_activation = bool(config['model']['final_activation'])
 
-
     # optimizer
     optimizer = getattr(tf.keras.optimizers, config['fit']['compile']['optimizer'])
     initial_lr = config['fit']['compile']['initial_lr']
@@ -89,7 +90,7 @@ def main(args):
         width_shift_range=0.1,
         height_shift_range=0.1,
         horizontal_flip=True,
-        #preprocessing_function=random_crop,
+        # preprocessing_function=random_crop,
         #brightness_range=(0.9, 1.2),
         #contrast_range=(0.9, 1.2)
     )
