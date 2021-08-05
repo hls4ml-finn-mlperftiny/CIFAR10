@@ -73,9 +73,8 @@ def main(args):
 
     # just use first 100
     if bool(our_config['convert']['Trace']):
-    if True:
-        X_test = X_test[:10]
-        y_test = y_test[:10]
+        X_test = X_test[:100]
+        y_test = y_test[:100]
 
     y_keras = model.predict(X_test)
     print("Keras Accuracy:  {}".format(accuracy_score(np.argmax(y_test, axis=1), np.argmax(y_keras, axis=1))))
@@ -106,14 +105,22 @@ def main(args):
     for name in our_config['convert']['Override'].keys():
         config['LayerName'][name].update(our_config['convert']['Override'][name])
 
-    cfg = hls4ml.converters.create_backend_config(fpga_part='xc7z020clg400-1')
+    backend = our_config['convert']['Backend']
+    clock_period = our_config['convert']['ClockPeriod']
+    io_type = our_config['convert']['IOType']
+    interface = our_config['convert']['Interface']
+    if backend == 'VivadoAccelerator':
+        board = our_config['convert']['Board']
+        driver = our_config['convert']['Driver']
+        cfg = hls4ml.converters.create_config(backend=backend, board=board, interface=interface, clock_period=clock_period,
+                                              io_type=io_type, driver=driver)
+    else:
+        part = our_config['convert']['XilinxPart']
+        cfg = hls4ml.converters.create_config(backend=backend, part=part, clock_period=clock_period, 
+                                              io_type=io_type)
     cfg['HLSConfig'] = config
-    cfg['IOType'] = our_config['convert']['IOType']
-    cfg['Backend'] = our_config['convert']['Backend']
     cfg['InputData'] = 'input_data.dat'
     cfg['OutputPredictions'] = 'output_predictions.dat'
-    cfg['Interface'] = 's_axilite'  # or 'm_axi'
-    cfg['ClockPeriod'] = our_config['convert']['ClockPeriod']
     cfg['KerasModel'] = model
     cfg['OutputDir'] = our_config['convert']['OutputDir']
 
@@ -172,8 +179,8 @@ def main(args):
         np.savetxt('output_predictions.dat', y_keras[:1].reshape(1, -1), fmt='%f', delimiter=' ')
         hls_model.build(reset=False, csim=True, cosim=False, validation=False, synth=True, vsynth=False, export=False)
         hls4ml.report.read_vivado_report(our_config['convert']['OutputDir'])
-        if our_config['convert']['Backend'] == 'Pynq':
-            hls4ml.templates.PynqBackend.make_bitfile(hls_model)
+        if our_config['convert']['Backend'] == 'VivadoAccelerator':
+            hls4ml.templates.VivadoAcceleratorBackend.make_bitfile(hls_model)
 
 
 if __name__ == "__main__":

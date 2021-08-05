@@ -27,7 +27,6 @@ model:
   - '212'
   skip: 1
   avg_pooling: 1
-  final_activation: 1
 
 pruning:
   sparsity: 1.0 

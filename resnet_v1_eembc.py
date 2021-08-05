@@ -1,3 +1,4 @@
+import qkeras
 import numpy as np
 
 import tensorflow as tf
@@ -9,7 +10,7 @@ from qkeras.qlayers import QDense, QActivation
 from qkeras.qconvolutional import QConv2D
 from qkeras.qconv2d_batchnorm import QConv2DBatchnorm
 from qkeras.qpooling import QAveragePooling2D
-import qkeras
+
 
 # define model
 

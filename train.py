@@ -9,11 +9,15 @@ from sklearn.metrics import roc_auc_score
 import resnet_v1_eembc
 import yaml
 import csv
-import setGPU
 # from keras_flops import get_flops #(different flop calculation)
 import kerop
 from tensorflow.keras.datasets import cifar10
+from tensorflow.keras.layers.experimental.preprocessing import RandomCrop
+random_crop_model = tf.keras.models.Sequential()
+random_crop_model.add(RandomCrop(32, 32, input_shape=(32,32,3,)))
 
+def random_crop(x):
+    return random_crop_model.predict(x)
 
 def get_lr_schedule_func(initial_lr, lr_decay):
 
@@ -61,6 +65,8 @@ def main(args):
         use_stochastic_rounding = config["quantization"]["use_stochastic_rounding"]
         logit_quantizer = config["quantization"]["logit_quantizer"]
         activation_quantizer = config["quantization"]["activation_quantizer"]
+        final_activation = bool(config['model']['final_activation'])
+
 
     # optimizer
     optimizer = getattr(tf.keras.optimizers, config['fit']['compile']['optimizer'])
@@ -71,12 +77,11 @@ def main(args):
     (X_train, y_train), (X_test, y_test) = cifar10.load_data()
     X_train, X_test = X_train/256., X_test/256.
 
-    if loss == 'categorical_cross_entropy':
-        y_train = tf.keras.utils.to_categorical(y_train, num_classes)
-        y_test = tf.keras.utils.to_categorical(y_test, num_classes)
-    elif loss == 'squared_hinge':
-        y_train = tf.keras.utils.to_categorical(y_train, num_classes) * 2 - 1  # -1 or 1 for hinge loss
-        y_test = tf.keras.utils.to_categorical(y_test, num_classes) * 2 - 1
+    y_train = tf.keras.utils.to_categorical(y_train, num_classes)
+    y_test = tf.keras.utils.to_categorical(y_test, num_classes)
+    if loss == 'squared_hinge':
+        y_train = y_train * 2 - 1  # -1 or 1 for hinge loss
+        y_test = y_test * 2 - 1
 
     # define data generator
     datagen = ImageDataGenerator(
@@ -84,6 +89,7 @@ def main(args):
         width_shift_range=0.1,
         height_shift_range=0.1,
         horizontal_flip=True,
+        #preprocessing_function=random_crop,
         #brightness_range=(0.9, 1.2),
         #contrast_range=(0.9, 1.2)
     )
@@ -108,10 +114,10 @@ def main(args):
         kwargs["activation_total_bits"] = activation_total_bits
         kwargs["activation_int_bits"] = activation_int_bits
         kwargs["alpha"] = None if alpha == 'None' else alpha
-        print(kwargs["alpha"] is None)
         kwargs["use_stochastic_rounding"] = use_stochastic_rounding
         kwargs["logit_quantizer"] = logit_quantizer
         kwargs["activation_quantizer"] = activation_quantizer
+        kwargs["final_activation"] = final_activation
 
     # define model
     model = getattr(resnet_v1_eembc, model_name)(**kwargs)
