@@ -8,7 +8,7 @@ dependencies:
     - jupyter
     - pydot
     - graphviz
-    - git+https://github.com/nicologhielmetti/hls4ml@pynq-pr#egg=hls4ml[profiling]
+    - git+https://github.com/jmduarte/hls4ml@pynq-pr#egg=hls4ml[profiling]
     - matplotlib
     - numpy
     - PyYAML

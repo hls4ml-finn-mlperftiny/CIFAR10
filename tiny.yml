@@ -51,13 +51,11 @@ convert:
   Driver: python
   Board: pynq-z2
   Precision: ap_fixed<8,6>
-  PrecisionActivation: ap_ufixed<8,3,AP_RND,AP_SAT>
   ReuseFactor: 16384
   Trace: 0
-  Build: 1
-  ClockPeriod: 20
+  Build: 0
+  ClockPeriod: 10
   Strategy: Resource
-
   Override:
     input_1:
       Precision: ap_ufixed<8,0>
@@ -66,6 +64,10 @@ convert:
       Precision:
         weight: ap_fixed<8,3>
         bias: ap_fixed<8,3>
+        result: ap_fixed<9,6>
+        default: ap_fixed<9,6>
+    q_conv2d_batchnorm_linear:
+      Precision:
         result: ap_fixed<9,6>
         default: ap_fixed<9,6>
     q_activation:
@@ -79,6 +81,10 @@ convert:
         bias: ap_fixed<8,3>
         result: ap_fixed<9,6>
         default: ap_fixed<9,6>
+    q_conv2d_batchnorm_1_linear:
+      Precision:
+        result: ap_fixed<8,6>
+        default: ap_fixed<8,6>
     q_activation_1:
       Precision:
         default: ap_fixed<9,6>
@@ -88,6 +94,10 @@ convert:
       Precision:
         weight: ap_fixed<8,3>
         bias: ap_fixed<8,3>
+        result: ap_fixed<9,6>
+        default: ap_fixed<9,6>
+    q_conv2d_batchnorm_2_linear:
+      Precision:
         result: ap_fixed<9,6>
         default: ap_fixed<9,6>
     q_activation_2:

@@ -21,7 +21,7 @@ import os
 import setGPU
 # edit depending on where Vivado is installed:
 # os.environ['PATH'] = '/<Xilinx installation directory>/Vivado/<version>/bin:' + os.environ['PATH']
-os.environ['PATH'] = '/xilinx/Vivado/2019.2/bin:' + os.environ['PATH']
+os.environ['PATH'] = '/xilinx/Vivado/2019.1/bin:' + os.environ['PATH']
 
 
 def print_dict(d, indent=0):
@@ -72,7 +72,8 @@ def main(args):
     y_test = tf.keras.utils.to_categorical(y_test, num_classes)
 
     # just use first 100
-    if bool(our_config['convert']['Trace']):
+    #if bool(our_config['convert']['Trace']):
+    if True:
         X_test = X_test[:100]
         y_test = y_test[:100]
 
@@ -90,20 +91,21 @@ def main(args):
     print_dict(config)
     print("-----------------------------------")
 
-    config['Model'] = {}
+    #config['Model'] = {}
     config['Model']['ReuseFactor'] = our_config['convert']['ReuseFactor']
     config['Model']['Strategy'] = our_config['convert']['Strategy']
     config['Model']['Precision'] = our_config['convert']['Precision']
+    print(config['LayerName'].keys())
     for name in config['LayerName'].keys():
         config['LayerName'][name]['Trace'] = bool(our_config['convert']['Trace'])
         config['LayerName'][name]['ReuseFactor'] = our_config['convert']['ReuseFactor']
         config['LayerName'][name]['Precision'] = our_config['convert']['Precision']
-        if 'activation' in name:
-            config['LayerName'][name]['Precision'] = {}
-            config['LayerName'][name]['Precision']['result'] = our_config['convert']['PrecisionActivation']
     # custom configs
     for name in our_config['convert']['Override'].keys():
+        if name not in config['LayerName'].keys():
+            config['LayerName'][name] = {}
         config['LayerName'][name].update(our_config['convert']['Override'][name])
+
 
     backend = our_config['convert']['Backend']
     clock_period = our_config['convert']['ClockPeriod']
@@ -140,14 +142,14 @@ def main(args):
         import matplotlib.pyplot as plt
 
         plt.figure()
-        wp, ap = numerical(model=model, hls_model=hls_model, X=X_test)
+        wp, wph, ap, aph = numerical(model=model, hls_model=hls_model, X=X_test)
         plt.show()
         plt.savefig('profiling_numerical.png', dpi=300)
 
-        plt.figure()
-        cp = compare(keras_model=model, hls_model=hls_model, X=X_test, plot_type="dist_diff")
-        plt.show()
-        plt.savefig('profiling_compare.png', dpi=300)
+        #plt.figure()
+        #cp = compare(keras_model=model, hls_model=hls_model, X=X_test, plot_type="dist_diff")
+        #plt.show()
+        #plt.savefig('profiling_compare.png', dpi=300)
 
         y_hls, hls4ml_trace = hls_model.trace(X_test)
         np.save('y_hls.npy', y_hls)
@@ -177,7 +179,7 @@ def main(args):
     if bool(our_config['convert']['Build']):
         np.savetxt('input_data.dat', X_test[:1].reshape(1, -1), fmt='%f', delimiter=' ')
         np.savetxt('output_predictions.dat', y_keras[:1].reshape(1, -1), fmt='%f', delimiter=' ')
-        hls_model.build(reset=False, csim=True, cosim=False, validation=False, synth=True, vsynth=False, export=False)
+        hls_model.build(reset=False, csim=True, cosim=True, validation=True, synth=True, vsynth=True, export=True)
         hls4ml.report.read_vivado_report(our_config['convert']['OutputDir'])
         if our_config['convert']['Backend'] == 'VivadoAccelerator':
             hls4ml.templates.VivadoAcceleratorBackend.make_bitfile(hls_model)
