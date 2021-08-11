@@ -15,19 +15,23 @@ import kerastuner
 from tensorflow.keras.datasets import cifar10
 import itertools
 
-filter_space = [2, 4, 8, 16, 32, 64]
+filter_space = [16, 32, 64, 128, 256]
 kernelsize_space = [1, 2, 3, 4]
 stride_space = [''.join(i) for i in itertools.product(['1', '2', '3', '4'], repeat=3)]  # space for skip=False
 skip = False
 avg_pooling = False
+final_activation = False
 epochs = 10
 batch_size = 32
-logit_total_bits = 8
-logit_int_bits = 2
-activation_total_bits = 8
-activation_int_bits = 2
-activate_final = True
-loss = 'categorical_crossentropy'
+logit_quantizer = 'quantized_bits'
+activation_quantizer = 'quantized_relu'
+logit_total_bits = 4
+logit_int_bits = 1
+activation_total_bits = 4
+activation_int_bits = 1
+loss = 'squared_hinge'
+initial_lr = 0.001
+lr_decay = 0.99
 
 # define cnn model
 
@@ -74,11 +78,11 @@ def build_model(hp):
                                       logit_total_bits=logit_total_bits, logit_int_bits=logit_int_bits,
                                       activation_total_bits=activation_total_bits, activation_int_bits=activation_int_bits,
                                       alpha=1, use_stochastic_rounding=False,
-                                      logit_quantizer='quantized_bits', activation_quantizer='quantized_relu',
-                                      activate_final=True
+                                      logit_quantizer=logit_quantizer, activation_quantizer=activation_quantizer,
+                                      final_activation=final_activation
                                       )
     # compile model
-    optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
+    optimizer = tf.keras.optimizers.Adam(learning_rate=initial_lr)
     model.compile(optimizer=optimizer,
                   loss=loss,
                   metrics=['accuracy'])
@@ -88,10 +92,15 @@ def build_model(hp):
 def main(args):
 
     (X_train, y_train), (X_test, y_test) = cifar10.load_data()
-    num_classes = 10
+    X_train, X_test = X_train/256., X_test/256.
 
+    num_classes = 10
+ 
     y_train = tf.keras.utils.to_categorical(y_train, num_classes)
     y_test = tf.keras.utils.to_categorical(y_test, num_classes)
+    if loss == 'squared_hinge':
+        y_train = y_train * 2 - 1  # -1 or 1 for hinge loss 
+        y_test = y_test * 2 - 1
 
     # define data generator
     datagen = ImageDataGenerator(
@@ -137,7 +146,7 @@ def main(args):
     print(tuner.search_space_summary())
 
     from tensorflow.keras.callbacks import LearningRateScheduler
-    lr_schedule_func = get_lr_schedule_func(0.001, 0.99)
+    lr_schedule_func = get_lr_schedule_func(initial_lr, lr_decay)
 
     callbacks = [LearningRateScheduler(lr_schedule_func, verbose=1)]
 
