@@ -53,7 +53,7 @@ convert:
   Precision: ap_fixed<8,6>
   ReuseFactor: 16384
   Trace: 0
-  Build: 0
+  Build: 1
   ClockPeriod: 10
   Strategy: Resource
   Override:
