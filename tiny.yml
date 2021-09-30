@@ -66,6 +66,7 @@ convert:
         bias: ap_fixed<8,3>
         result: ap_fixed<9,6>
         default: ap_fixed<9,6>
+      ConvImplementation: 'Encoded'
     q_conv2d_batchnorm_linear:
       Precision:
         result: ap_fixed<9,6>
@@ -81,6 +82,7 @@ convert:
         bias: ap_fixed<8,3>
         result: ap_fixed<9,6>
         default: ap_fixed<9,6>
+      ConvImplementation: 'Encoded'
     q_conv2d_batchnorm_1_linear:
       Precision:
         result: ap_fixed<8,6>
@@ -96,6 +98,7 @@ convert:
         bias: ap_fixed<8,3>
         result: ap_fixed<9,6>
         default: ap_fixed<9,6>
+      ConvImplementation: 'Encoded'
     q_conv2d_batchnorm_2_linear:
       Precision:
         result: ap_fixed<9,6>
