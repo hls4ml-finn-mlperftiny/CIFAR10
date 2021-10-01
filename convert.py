@@ -95,6 +95,7 @@ def main(args):
     config['Model']['ReuseFactor'] = our_config['convert']['ReuseFactor']
     config['Model']['Strategy'] = our_config['convert']['Strategy']
     config['Model']['Precision'] = our_config['convert']['Precision']
+    config['SkipOptimizers'] = ['reshape_stream']
     print(config['LayerName'].keys())
     for name in config['LayerName'].keys():
         config['LayerName'][name]['Trace'] = bool(our_config['convert']['Trace'])
