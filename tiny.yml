@@ -54,6 +54,7 @@ convert:
   ReuseFactor: 16384
   Trace: 0
   Build: 1
+  FIFO_opt: 1
   ClockPeriod: 10
   Strategy: Resource
   Override:

@@ -71,20 +71,19 @@ def main(args):
     num_classes = 10
     y_test = tf.keras.utils.to_categorical(y_test, num_classes)
 
-    # just use first 100
+    # just use first 10 (RTL sim is slow)
     #if bool(our_config['convert']['Trace']):
     if True:
-        X_test = X_test[:100]
-        y_test = y_test[:100]
+        X_test = X_test[:10]
+        y_test = y_test[:10]
 
     y_keras = model.predict(X_test)
     print("Keras Accuracy:  {}".format(accuracy_score(np.argmax(y_test, axis=1), np.argmax(y_keras, axis=1))))
 
-    np.save('y_keras.npy', y_keras)
-    np.save('y_test.npy', y_test)
-    np.save('X_test.npy', X_test)
+    np.save(os.path.join(save_dir, 'y_keras.npy'), y_keras)
+    np.save(os.path.join(save_dir, 'y_test.npy'), y_test)
+    np.save(os.path.join(save_dir, 'X_test.npy'), X_test)
 
-    import hls4ml
     config = hls4ml.utils.config_from_keras_model(model, granularity='name')
 
     print("-----------------------------------")
@@ -95,6 +94,8 @@ def main(args):
     config['Model']['ReuseFactor'] = our_config['convert']['ReuseFactor']
     config['Model']['Strategy'] = our_config['convert']['Strategy']
     config['Model']['Precision'] = our_config['convert']['Precision']
+    if bool(our_config['convert']['FIFO_opt']):
+        config['Model']['FIFO_opt'] = 1
     config['SkipOptimizers'] = ['reshape_stream']
     print(config['LayerName'].keys())
     for name in config['LayerName'].keys():
@@ -122,8 +123,8 @@ def main(args):
         cfg = hls4ml.converters.create_config(backend=backend, part=part, clock_period=clock_period,
                                               io_type=io_type)
     cfg['HLSConfig'] = config
-    cfg['InputData'] = 'input_data.dat'
-    cfg['OutputPredictions'] = 'output_predictions.dat'
+    cfg['InputData'] = os.path.join(save_dir, 'X_test.npy')
+    cfg['OutputPredictions'] = os.path.join(save_dir, 'y_test.npy')
     cfg['KerasModel'] = model
     cfg['OutputDir'] = our_config['convert']['OutputDir']
 
@@ -153,7 +154,7 @@ def main(args):
         #plt.savefig('profiling_compare.png', dpi=300)
 
         y_hls, hls4ml_trace = hls_model.trace(X_test)
-        np.save('y_hls.npy', y_hls)
+        np.save(os.path.join(save_dir, 'y_hls.npy'), y_hls)
         keras_trace = hls4ml.model.profiling.get_ymodel_keras(model, X_test)
 
         for layer in hls4ml_trace.keys():
@@ -178,10 +179,17 @@ def main(args):
 
     # Bitfile time
     if bool(our_config['convert']['Build']):
-        np.savetxt('input_data.dat', X_test[:1].reshape(1, -1), fmt='%f', delimiter=' ')
-        np.savetxt('output_predictions.dat', y_keras[:1].reshape(1, -1), fmt='%f', delimiter=' ')
-        hls_model.build(reset=False, csim=True, cosim=True, validation=True, synth=True, vsynth=True, export=True)
-        hls4ml.report.read_vivado_report(our_config['convert']['OutputDir'])
+        if bool(our_config['convert']['FIFO_opt']):
+            from hls4ml.model.profiling import optimize_fifos_depth
+            hls_model = optimize_fifos_depth(model, output_dir=our_config['convert']['OutputDir'],
+                                             clock_period=our_config['convert']['ClockPeriod'],
+                                             backend=our_config['convert']['Backend'],
+                                             input_data_tb=os.path.join(save_dir, 'X_test.npy'),
+                                             output_data_tb=os.path.join(save_dir, 'y_test.npy'),
+                                             board=our_config['convert']['Board'], hls_config=config)
+        else:
+            hls_model.build(reset=False, csim=True, cosim=True, validation=True, synth=True, vsynth=True, export=True)
+            hls4ml.report.read_vivado_report(our_config['convert']['OutputDir'])
         if our_config['convert']['Backend'] == 'VivadoAccelerator':
             hls4ml.templates.VivadoAcceleratorBackend.make_bitfile(hls_model)
 

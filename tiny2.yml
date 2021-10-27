@@ -51,7 +51,7 @@ convert:
   RemoveSoftmax: 1
   OutputDir: my-hls-test-quantized-tiny2
   XilinxPart: xc7z020clg400-1
-  Backend: Vivado
+  Backend: VivadoAccelerator
   IOType: io_stream
   Interface: axi_stream
   Driver: python
@@ -60,6 +60,7 @@ convert:
   ReuseFactor: 16384
   Trace: 0
   Build: 1
+  FIFO_opt: 1
   ClockPeriod: 10
   Strategy: Resource
   Override:
@@ -72,7 +73,7 @@ convert:
         bias: ap_fixed<8,3>
         result: ap_fixed<9,6>
         default: ap_fixed<9,6>
-      ConvImplementation: 'Encoded'
+      ConvImplementation: 'LineBuffer'
     q_conv2d_batchnorm_linear:
       Precision:
         result: ap_fixed<9,6>
@@ -88,7 +89,7 @@ convert:
         bias: ap_fixed<8,3>
         result: ap_fixed<9,6>
         default: ap_fixed<9,6>
-      ConvImplementation: 'Encoded'
+      ConvImplementation: 'LineBuffer'
     q_conv2d_batchnorm_1_linear:
       Precision:
         result: ap_fixed<9,6>
@@ -104,7 +105,7 @@ convert:
         bias: ap_fixed<8,3>
         result: ap_fixed<9,6>
         default: ap_fixed<9,6>
-      ConvImplementation: 'Encoded'
+      ConvImplementation: 'LineBuffer'
     q_conv2d_batchnorm_2_linear:
       Precision:
         result: ap_fixed<9,6>
@@ -120,7 +121,7 @@ convert:
         bias: ap_fixed<8,3>
         result: ap_fixed<9,6>
         default: ap_fixed<9,6>
-      ConvImplementation: 'Encoded'
+      ConvImplementation: 'LineBuffer'
     q_conv2d_batchnorm_3_linear:
       Precision:
         result: ap_fixed<9,6>
@@ -136,7 +137,7 @@ convert:
         bias: ap_fixed<8,3>
         result: ap_fixed<9,6>
         default: ap_fixed<9,6>
-      ConvImplementation: 'Encoded'
+      ConvImplementation: 'LineBuffer'
     q_conv2d_batchnorm_4_linear:
       Precision:
         result: ap_fixed<9,6>
