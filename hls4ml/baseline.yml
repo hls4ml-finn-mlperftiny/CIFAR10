@@ -1,0 +1,60 @@
+save_dir: resnet_v1_eembc
+
+model:
+  name: resnet_v1_eembc
+  filters: 
+  - 16
+  - 16
+  - 32
+  - 32
+  - 64
+  - 64
+  l1: 0
+  l2: 1e-4
+  kernels:
+  - 3
+  - 3
+  - 3
+  - 3
+  - 3
+  - 1
+  - 3
+  - 3
+  - 1
+  strides: 
+  - '111'
+  - '212'
+  - '212'
+  skip: 1
+  avg_pooling: 1
+
+pruning:
+  sparsity: 1.0 
+
+fit:
+  compile:
+    initial_lr: 0.001
+    lr_decay: 0.99
+    optimizer: Adam
+    loss: categorical_crossentropy
+  epochs: 200
+  patience: 40
+  batch_size: 32
+  verbose: 1
+
+convert:
+  RemoveSoftmax: 1
+  OutputDir: my-hls-test
+  XilinxPart: xc7z020clg400-1
+  Backend: Vivado
+  IOType: io_stream
+  Precision: ap_fixed<16,6>
+  PrecisionActivation: ap_fixed<16,6>
+  ReuseFactor: 16384
+  Trace: 0
+  Build: 0
+  ClockPeriod: 20
+  Strategy: Resource
+  Override:
+    input_1:
+      Precision: ap_ufixed<8,1>
