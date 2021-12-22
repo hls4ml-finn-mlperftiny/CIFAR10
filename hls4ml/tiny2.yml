@@ -58,8 +58,8 @@ convert:
   Board: pynq-z2
   Precision: ap_fixed<11,7>
   ReuseFactor: 16384
-  Trace: 1
-  Build: 0
+  Trace: 0
+  Build: 1
   FIFO_opt: 1
   ClockPeriod: 10
   Strategy: Resource

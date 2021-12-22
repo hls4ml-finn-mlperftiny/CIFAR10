@@ -1,15 +1,16 @@
-import setGPU
 import os
+if os.system('nvidia-smi') == 0:
+    import setGPU
+import tensorflow as tf
 import glob
 import sys
 import argparse
-import tensorflow as tf
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from sklearn.metrics import roc_auc_score
 import resnet_v1_eembc
 import yaml
 import csv
-# from keras_flops import get_flops #(different flop calculation)
+# from keras_flops import get_flops # (different flop calculation)
 import kerop
 from tensorflow.keras.datasets import cifar10
 from tensorflow.keras.layers.experimental.preprocessing import RandomCrop

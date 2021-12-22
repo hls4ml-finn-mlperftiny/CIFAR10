@@ -1,3 +1,7 @@
+import os
+if os.system('nvidia-smi') == 0:
+    import setGPU
+import tensorflow as tf
 from tensorflow.keras.models import Model
 from sklearn.metrics import accuracy_score
 import argparse
@@ -17,13 +21,9 @@ import numpy as np
 import pandas as pd
 import hls4ml
 from qkeras.utils import _add_supported_quantized_objects
-import tensorflow as tf
-import os
-import setGPU
 # edit depending on where Vivado is installed:
 # os.environ['PATH'] = '/<Xilinx installation directory>/Vivado/<version>/bin:' + os.environ['PATH']
-os.environ['PATH'] = '/xilinx/Vivado/2019.1/bin:' + os.environ['PATH']
-
+# or source settings before running file
 
 def print_dict(d, indent=0):
     align = 20
@@ -147,6 +147,7 @@ def main(args):
     # profiling / testing
     hls_model = hls4ml.converters.keras_to_hls(cfg)
 
+    os.makedirs(cfg['OutputDir'], exist_ok=True)
     hls4ml.utils.plot_model(hls_model, show_shapes=True, show_precision=True, to_file=os.path.join(cfg['OutputDir'], 'model_hls4ml.png'))
 
     if bool(our_config['convert']['Trace']):
