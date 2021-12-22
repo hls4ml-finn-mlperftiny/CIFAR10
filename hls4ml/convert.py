@@ -14,6 +14,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.datasets import fetch_openml
 from tensorflow.keras.utils import to_categorical
 import numpy as np
+import pandas as pd
 import hls4ml
 from qkeras.utils import _add_supported_quantized_objects
 import tensorflow as tf
@@ -66,14 +67,26 @@ def main(args):
                               rankdir="TB",
                               expand_nested=False)
 
-    _, (X_test, y_test) = cifar10.load_data()
+    # to check on full dataset
+    #_, (X_test, y_test) = cifar10.load_data()
+    # to check on partial dataset
+    data_path = 'energyrunner/datasets/ic01'
+    df = pd.read_csv(os.path.join(data_path,'y_labels.csv'), names=['file_name', 'num_classes', 'label'])
+    X_test = np.zeros((len(df), 32, 32, 3))
+    y_test = np.zeros((len(df),))
+    for i, (file_name, label) in enumerate(zip(df['file_name'], df['label'])):
+        with open(os.path.join(data_path,file_name),'rb') as f:
+            image_bytes = f.read()
+            data = np.frombuffer(image_bytes,np.uint8).reshape(32, 32, 3)
+            X_test[i, :, :, :] = data
+            y_test[i] = label
+
     X_test = np.ascontiguousarray(X_test/256.)
     num_classes = 10
     y_test = tf.keras.utils.to_categorical(y_test, num_classes)
 
     # just use first 10 (RTL sim is slow)
-    #if bool(our_config['convert']['Trace']):
-    if True:
+    if bool(our_config['convert']['Build']):
         X_test = X_test[:10]
         y_test = y_test[:10]
 

@@ -1,0 +1,3 @@
+[submodule "hls4ml/energyrunner"]
+	path = hls4ml/energyrunner
+	url = https://github.com/eembc/energyrunner
