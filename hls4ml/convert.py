@@ -1,3 +1,7 @@
+import os
+if os.system('nvidia-smi') == 0:
+    import setGPU
+import tensorflow as tf
 from tensorflow.keras.models import Model
 from sklearn.metrics import accuracy_score
 import argparse
@@ -17,13 +21,9 @@ import numpy as np
 import pandas as pd
 import hls4ml
 from qkeras.utils import _add_supported_quantized_objects
-import tensorflow as tf
-import os
-import setGPU
 # edit depending on where Vivado is installed:
 # os.environ['PATH'] = '/<Xilinx installation directory>/Vivado/<version>/bin:' + os.environ['PATH']
-os.environ['PATH'] = '/xilinx/Vivado/2019.1/bin:' + os.environ['PATH']
-
+# or source settings before running file
 
 def print_dict(d, indent=0):
     align = 20
@@ -60,7 +60,7 @@ def main(args):
 
     model.summary()
     tf.keras.utils.plot_model(model,
-                              to_file="model.png",
+                              to_file=os.path.join(save_dir, "model.png"),
                               show_shapes=True,
                               show_dtype=False,
                               show_layer_names=False,
@@ -103,14 +103,13 @@ def main(args):
     print_dict(config)
     print("-----------------------------------")
 
-    #config['Model'] = {}
     config['Model']['ReuseFactor'] = our_config['convert']['ReuseFactor']
     config['Model']['Strategy'] = our_config['convert']['Strategy']
     config['Model']['Precision'] = our_config['convert']['Precision']
     if bool(our_config['convert']['FIFO_opt']):
         config['Model']['FIFO_opt'] = 1
     config['SkipOptimizers'] = ['reshape_stream']
-    print(config['LayerName'].keys())
+
     for name in config['LayerName'].keys():
         config['LayerName'][name]['Trace'] = bool(our_config['convert']['Trace'])
         config['LayerName'][name]['ReuseFactor'] = our_config['convert']['ReuseFactor']
@@ -148,7 +147,8 @@ def main(args):
     # profiling / testing
     hls_model = hls4ml.converters.keras_to_hls(cfg)
 
-    hls4ml.utils.plot_model(hls_model, show_shapes=True, show_precision=True, to_file='model_hls4ml.png')
+    os.makedirs(cfg['OutputDir'], exist_ok=True)
+    hls4ml.utils.plot_model(hls_model, show_shapes=True, show_precision=True, to_file=os.path.join(cfg['OutputDir'], 'model_hls4ml.png'))
 
     if bool(our_config['convert']['Trace']):
         from hls4ml.model.profiling import compare, numerical
@@ -158,13 +158,11 @@ def main(args):
 
         plt.figure()
         wp, wph, ap, aph = numerical(model=model, hls_model=hls_model, X=X_test)
-        plt.show()
-        plt.savefig('profiling_numerical.png', dpi=300)
+        plt.savefig(os.path.join(cfg['OutputDir'], 'profiling_numerical.png'), dpi=300)
 
         #plt.figure()
         #cp = compare(keras_model=model, hls_model=hls_model, X=X_test, plot_type="dist_diff")
-        #plt.show()
-        #plt.savefig('profiling_compare.png', dpi=300)
+        #plt.savefig(os.path.join(cfg['OutputDir'], 'profiling_compare.png'), dpi=300)
 
         y_hls, hls4ml_trace = hls_model.trace(X_test)
         np.save(os.path.join(save_dir, 'y_hls.npy'), y_hls)
@@ -181,8 +179,7 @@ def main(args):
             plt.plot([min_x, max_x], [min_x, max_x], c='gray')
             plt.xlabel('hls4ml {}'.format(layer))
             plt.ylabel('QKeras {}'.format(klayer))
-            plt.show()
-            plt.savefig('profiling_{}.png'.format(layer), dpi=300)
+            plt.savefig(os.path.join(cfg['OutputDir'], 'profiling_{}.png'.format(layer)), dpi=300)
     else:
         hls_model.compile()
         y_hls = hls_model.predict(X_test)
