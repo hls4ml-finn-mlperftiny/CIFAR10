@@ -21,16 +21,11 @@ import numpy as np
 import pandas as pd
 import hls4ml
 from qkeras.utils import _add_supported_quantized_objects
-import shutil
-
 # edit depending on where Vivado is installed:
 # os.environ['PATH'] = '/<Xilinx installation directory>/Vivado/<version>/bin:' + os.environ['PATH']
 # or source settings before running file
 
 PERF_SAMPLE = True
-# Set the number of test images included
-# in the input_data/output_preds .dat files
-num_test_imgs = 5
 
 def print_dict(d, indent=0):
     align = 20
@@ -107,10 +102,12 @@ def main(args):
     config['Model']['ReuseFactor'] = our_config['convert']['ReuseFactor']
     config['Model']['Strategy'] = our_config['convert']['Strategy']
     config['Model']['Precision'] = our_config['convert']['Precision']
+
     if bool(our_config['convert']['FIFO_opt']):
         config['Model']['FIFO_opt'] = 1
 
     config['SkipOptimizers'] = ['reshape_stream']
+    
     if bool(our_config['convert']['MergedRelu']):
         config['Model']['MergedRelu'] = 1
     else:
@@ -187,34 +184,8 @@ def main(args):
             plt.ylabel('QKeras {}'.format(klayer))
             plt.savefig(os.path.join(cfg['OutputDir'], 'profiling_{}.png'.format(layer)), dpi=300)
     else:
-        # Original save of input_data/output_preds
-        np.savetxt('input_data.dat', X_test[:1].reshape(1, -1), fmt='%f', delimiter=' ')
-        np.savetxt('output_predictions.dat', y_test[:1].reshape(1, -1), fmt='%f', delimiter=' ')
-    
-        # Extending input_data/output_pred by appending
-        # the data/preds of more test images (num_test_imgs)
-        for i in range(1, num_test_imgs):
-            with open('input_data.dat', "ab") as f:
-                np.savetxt(f, X_test[i].reshape(1, -1), fmt='%f', delimiter=' ')
-    
-            with open('output_predictions.dat', "ab") as f:
-                np.savetxt(f, y_test[i].reshape(1, -1), fmt='%f', delimiter=' ')
         hls_model.compile()
         y_hls = hls_model.predict(X_test)
-        ######################
-        # Original save of input_data/output_preds
-        np.savetxt('hls_predictions.dat', y_hls[:1].reshape(1, -1), fmt='%f', delimiter=' ')
-        np.savetxt('keras_predictions.dat', y_keras[:1].reshape(1, -1), fmt='%f', delimiter=' ')
-        
-        # Extending input_data/output_pred by appending
-        # the data/preds of more test images (num_test_imgs)
-        for i in range(1, num_test_imgs):        
-          with open('hls_predictions.dat', "ab") as f:
-            np.savetxt(f, y_hls[i].reshape(1, -1), fmt='%f', delimiter=' ')
-            
-          with open('keras_predictions.dat', "ab") as f:
-            np.savetxt(f, y_keras[i].reshape(1, -1), fmt='%f', delimiter=' ')
-        #######################
 
     print("Keras Accuracy:  {}".format(accuracy_score(np.argmax(y_test, axis=1), np.argmax(y_keras, axis=1))))
     print("hls4ml Accuracy: {}".format(accuracy_score(np.argmax(y_test, axis=1), np.argmax(y_hls, axis=1))))
@@ -230,34 +201,6 @@ def main(args):
                                              output_data_tb=os.path.join(save_dir, 'y_test.npy'),
                                              board=our_config['convert']['Board'], hls_config=config)
         else:
-            ######################
-            # Original save of input_data/output_preds
-            np.savetxt('input_data.dat', X_test[:1].reshape(1, -1), fmt='%f', delimiter=' ')
-            np.savetxt('output_predictions.dat', y_test[:1].reshape(1, -1), fmt='%f', delimiter=' ')
-            np.savetxt('hls_predictions.dat', y_hls[:1].reshape(1, -1), fmt='%f', delimiter=' ')
-            np.savetxt('keras_predictions.dat', y_keras[:1].reshape(1, -1), fmt='%f', delimiter=' ')
-            
-            # Extending input_data/output_pred by appending
-            # the data/preds of more test images (num_test_imgs)
-            for i in range(1, num_test_imgs):
-                with open('input_data.dat', "ab") as f:
-                    np.savetxt(f, X_test[i].reshape(1, -1), fmt='%f', delimiter=' ')
-                
-                with open('output_predictions.dat', "ab") as f:
-                    np.savetxt(f, y_test[i].reshape(1, -1), fmt='%f', delimiter=' ')
-                    
-                with open('hls_predictions.dat', "ab") as f:
-                    np.savetxt(f, y_hls[i].reshape(1, -1), fmt='%f', delimiter=' ')
-                    
-                with open('keras_predictions.dat', "ab") as f:
-                    np.savetxt(f, y_keras[i].reshape(1, -1), fmt='%f', delimiter=' ')
-            #######################
-            
-            # Replacing default csim testbench with our testbench
-            shutil.copy2("./csim_testbench/myproject_test.cpp", f"{our_config['convert']['OutputDir']}/myproject_test.cpp")
-            shutil.copy2("./hls_predictions.dat", f"{our_config['convert']['OutputDir']}/tb_data/tb_hls_predictions.dat")
-            shutil.copy2("./keras_predictions.dat", f"{our_config['convert']['OutputDir']}/tb_data/tb_keras_predictions.dat")
-
             hls_model.build(reset=False, csim=True, cosim=True, validation=True, synth=True, vsynth=True, export=True)
             hls4ml.report.read_vivado_report(our_config['convert']['OutputDir'])
         if our_config['convert']['Backend'] == 'VivadoAccelerator':
