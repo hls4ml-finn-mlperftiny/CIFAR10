@@ -102,9 +102,16 @@ def main(args):
     config['Model']['ReuseFactor'] = our_config['convert']['ReuseFactor']
     config['Model']['Strategy'] = our_config['convert']['Strategy']
     config['Model']['Precision'] = our_config['convert']['Precision']
+
     if bool(our_config['convert']['FIFO_opt']):
         config['Model']['FIFO_opt'] = 1
+
     config['SkipOptimizers'] = ['reshape_stream']
+    
+    if bool(our_config['convert']['MergedRelu']):
+        config['Model']['MergedRelu'] = 1
+    else:
+        config['SkipOptimizers'].append('relu_merge')
 
     for name in config['LayerName'].keys():
         config['LayerName'][name]['Trace'] = bool(our_config['convert']['Trace'])
