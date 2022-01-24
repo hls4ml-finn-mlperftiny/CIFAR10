@@ -25,6 +25,8 @@ from qkeras.utils import _add_supported_quantized_objects
 # os.environ['PATH'] = '/<Xilinx installation directory>/Vivado/<version>/bin:' + os.environ['PATH']
 # or source settings before running file
 
+PERF_SAMPLE = True
+
 def print_dict(d, indent=0):
     align = 20
     for key, value in d.items():
@@ -68,18 +70,12 @@ def main(args):
                               expand_nested=False)
 
     # to check on full dataset
-    #_, (X_test, y_test) = cifar10.load_data()
+    _, (X_test, y_test) = cifar10.load_data()
     # to check on partial dataset
-    data_path = 'energyrunner/datasets/ic01'
-    df = pd.read_csv(os.path.join(data_path,'y_labels.csv'), names=['file_name', 'num_classes', 'label'])
-    X_test = np.zeros((len(df), 32, 32, 3))
-    y_test = np.zeros((len(df),))
-    for i, (file_name, label) in enumerate(zip(df['file_name'], df['label'])):
-        with open(os.path.join(data_path,file_name),'rb') as f:
-            image_bytes = f.read()
-            data = np.frombuffer(image_bytes,np.uint8).reshape(32, 32, 3)
-            X_test[i, :, :, :] = data
-            y_test[i] = label
+    if PERF_SAMPLE:
+        _idxs = np.load('perf_samples_idxs.npy')
+        X_test = X_test[_idxs]
+        y_test = y_test[_idxs]
 
     X_test = np.ascontiguousarray(X_test/256.)
     num_classes = 10
