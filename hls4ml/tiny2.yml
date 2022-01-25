@@ -53,8 +53,8 @@ convert:
   XilinxPart: xc7z020clg400-1
   Backend: VivadoAccelerator
   IOType: io_stream
-  Interface: axi_stream
-  Driver: python
+  Interface: axi_master
+  Driver: c
   Board: pynq-z2
   Precision: ap_fixed<12,7>
   ReuseFactor: 16384
