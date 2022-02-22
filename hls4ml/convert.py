@@ -11,7 +11,7 @@ from qkeras.quantizers import quantized_bits, quantized_relu
 from qkeras.qlayers import QDense, QActivation
 from tensorflow.keras.regularizers import l1
 from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.layers import Activation
+from tensorflow.keras.layers import Activation, Input
 from tensorflow.keras.models import Sequential
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.model_selection import train_test_split
@@ -60,6 +60,13 @@ def main(args):
         model = Model(inputs=input_layer, outputs=output_layer)
         model.save(model_file_path.replace('.h5', '_nosoftmax.h5'))
 
+    apply_patches = bool(our_config['convert']['ApplyPatches'])
+    if apply_patches:
+        inputs = Input((32, 32, 3), name='input_3')
+        x = tf.keras.layers.experimental.preprocessing.Rescaling(1/256, name='rescaling_1')(inputs)
+        outputs = model(x)
+        model_rescale = Model(inputs=inputs, outputs=outputs)
+
     model.summary()
     tf.keras.utils.plot_model(model,
                               to_file=os.path.join(save_dir, "model.png"),
@@ -82,11 +89,17 @@ def main(args):
         y_test = y_test[:10]
     num_samples = X_test.shape[0]
 
-    X_test = np.ascontiguousarray(X_test/256.)
+    X_test = np.ascontiguousarray(X_test, dtype=np.float32)
+    if not apply_patches:
+        X_test = X_test/256.
     num_classes = 10
     y_test = tf.keras.utils.to_categorical(y_test, num_classes)
 
-    y_keras = model.predict(X_test)
+    if apply_patches:
+        y_keras = model_rescale.predict(X_test)
+    else:
+        y_keras = model.predict(X_test)
+
     print("Keras Accuracy:  {}".format(accuracy_score(np.argmax(y_test, axis=1), np.argmax(y_keras, axis=1))))
 
     np.save(os.path.join(save_dir, 'y_keras.npy'), y_keras)
@@ -142,6 +155,7 @@ def main(args):
     cfg['OutputPredictions'] = os.path.join(save_dir, 'y_test.npy')
     cfg['KerasModel'] = model
     cfg['OutputDir'] = our_config['convert']['OutputDir']
+    cfg['ApplyPatches'] = our_config['convert']['ApplyPatches']
 
     print("-----------------------------------")
     print_dict(cfg)
