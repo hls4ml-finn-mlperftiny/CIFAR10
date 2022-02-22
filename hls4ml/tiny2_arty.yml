@@ -49,13 +49,13 @@ quantization:
 
 convert:
   RemoveSoftmax: 1
-  OutputDir: my-hls-test-quantized-tiny2
-  XilinxPart: xc7z020clg400-1
+  OutputDir: my-hls-test-quantized-tiny2-arty
+  XilinxPart: xc7a100tcsg324-1
   Backend: VivadoAccelerator
   IOType: io_stream
   Interface: axi_master
   Driver: c
-  Board: pynq-z2
+  Board: arty-a7-100t
   Precision: ap_fixed<12,7>
   ReuseFactor: 16384
   Trace: 0

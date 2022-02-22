@@ -76,15 +76,15 @@ def main(args):
         _idxs = np.load('perf_samples_idxs.npy')
         X_test = X_test[_idxs]
         y_test = y_test[_idxs]
+    # just use first 10 samples for building (RTL sim is slow)
+    if bool(our_config['convert']['Build']):
+        X_test = X_test[:10]
+        y_test = y_test[:10]
+    num_samples = X_test.shape[0]
 
     X_test = np.ascontiguousarray(X_test/256.)
     num_classes = 10
     y_test = tf.keras.utils.to_categorical(y_test, num_classes)
-
-    # just use first 10 (RTL sim is slow)
-    if bool(our_config['convert']['Build']):
-        X_test = X_test[:10]
-        y_test = y_test[:10]
 
     y_keras = model.predict(X_test)
     print("Keras Accuracy:  {}".format(accuracy_score(np.argmax(y_test, axis=1), np.argmax(y_keras, axis=1))))
@@ -204,6 +204,15 @@ def main(args):
             hls_model.build(reset=False, csim=True, cosim=True, validation=True, synth=True, vsynth=True, export=True)
             hls4ml.report.read_vivado_report(our_config['convert']['OutputDir'])
         if our_config['convert']['Backend'] == 'VivadoAccelerator':
+            if our_config['convert']['Driver'] == 'c':
+                hls4ml.writer.vivado_accelerator_writer.VivadoAcceleratorWriter.write_header_file(
+                    X_test.reshape(num_samples, -1),
+                    y_test,
+                    y_keras,
+                    y_hls,
+                    num_samples,
+                    os.path.join(our_config['convert']['OutputDir'], 'sdk/common/data.h'))
+                
             hls4ml.templates.VivadoAcceleratorBackend.make_bitfile(hls_model)
 
 
