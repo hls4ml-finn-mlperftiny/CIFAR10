@@ -208,7 +208,7 @@ def main(args):
     if bool(our_config['convert']['Build']):
         if bool(our_config['convert']['FIFO_opt']):
             from hls4ml.model.profiling import optimize_fifos_depth
-            hls_model = optimize_fifos_depth(model, hls_model)
+            hls_model = optimize_fifos_depth(hls_model)
         else:
             hls_model.build(reset=False, csim=True, cosim=True, validation=True, synth=True, vsynth=True, export=True)
             hls4ml.report.read_vivado_report(our_config['convert']['OutputDir'])
