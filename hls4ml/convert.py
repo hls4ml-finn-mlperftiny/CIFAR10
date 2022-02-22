@@ -209,11 +209,12 @@ def main(args):
         if bool(our_config['convert']['FIFO_opt']):
             from hls4ml.model.profiling import optimize_fifos_depth
             hls_model = optimize_fifos_depth(model, output_dir=our_config['convert']['OutputDir'],
-                                             clock_period=our_config['convert']['ClockPeriod'],
-                                             backend=our_config['convert']['Backend'],
+                                             clock_period=clock_period,
+                                             backend=backend,
                                              input_data_tb=os.path.join(save_dir, 'X_test.npy'),
                                              output_data_tb=os.path.join(save_dir, 'y_test.npy'),
-                                             board=our_config['convert']['Board'], hls_config=config)
+                                             board=board, hls_config=config,
+                                             interface=interface, driver=driver)
         else:
             hls_model.build(reset=False, csim=True, cosim=True, validation=True, synth=True, vsynth=True, export=True)
             hls4ml.report.read_vivado_report(our_config['convert']['OutputDir'])
