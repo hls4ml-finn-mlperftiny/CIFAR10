@@ -42,19 +42,21 @@ quantization:
   use_stochastic_rounding: 0
 
 convert:
+  ApplyPatches: 1
   RemoveSoftmax: 1
-  OutputDir: my-hls-test-quantized-tiny
-  XilinxPart: xc7z020clg400-1
+  OutputDir: my-hls-test-quantized-tiny-arty-a7-100t-rf16384
+  XilinxPart: xc7a100tcsg324-1
   Backend: VivadoAccelerator
   IOType: io_stream
-  Interface: axi_stream
-  Driver: python
-  Board: pynq-z2
+  Interface: axi_master
+  Driver: c
+  Board: arty-a7-100t
   Precision: ap_fixed<8,6>
   ReuseFactor: 16384
   Trace: 0
   Build: 1
-  FIFO_opt: 1
+  FIFO_opt: 0
+  MergedRelu: 0
   ClockPeriod: 10
   Strategy: Resource
   Override:
@@ -67,7 +69,7 @@ convert:
         bias: ap_fixed<8,3>
         result: ap_fixed<9,6>
         default: ap_fixed<9,6>
-      ConvImplementation: 'Encoded'
+      ConvImplementation: 'LineBuffer'
     q_conv2d_batchnorm_linear:
       Precision:
         result: ap_fixed<9,6>
@@ -83,7 +85,7 @@ convert:
         bias: ap_fixed<8,3>
         result: ap_fixed<9,6>
         default: ap_fixed<9,6>
-      ConvImplementation: 'Encoded'
+      ConvImplementation: 'LineBuffer'
     q_conv2d_batchnorm_1_linear:
       Precision:
         result: ap_fixed<8,6>
@@ -99,7 +101,7 @@ convert:
         bias: ap_fixed<8,3>
         result: ap_fixed<9,6>
         default: ap_fixed<9,6>
-      ConvImplementation: 'Encoded'
+      ConvImplementation: 'LineBuffer'
     q_conv2d_batchnorm_2_linear:
       Precision:
         result: ap_fixed<9,6>
