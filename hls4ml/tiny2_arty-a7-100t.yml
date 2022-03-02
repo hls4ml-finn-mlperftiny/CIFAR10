@@ -56,11 +56,13 @@ convert:
   IOType: io_stream
   Interface: axi_master
   Driver: c
+  InputType: ap_uint<8>
+  OutputType: float
   Board: arty-a7-100t
   Precision: ap_fixed<12,7>
   ReuseFactor: 16384
   Trace: 0
-  Build: 0
+  Build: 1
   FIFO_opt: 1
   MergedRelu: 1
   ClockPeriod: 10

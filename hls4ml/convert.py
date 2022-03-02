@@ -144,8 +144,10 @@ def main(args):
     if backend == 'VivadoAccelerator':
         board = our_config['convert']['Board']
         driver = our_config['convert']['Driver']
+        input_type=our_config['convert']['InputType']
+        output_type = our_config['convert']['OutputType']
         cfg = hls4ml.converters.create_config(backend=backend, board=board, interface=interface, clock_period=clock_period,
-                                              io_type=io_type, driver=driver)
+                                              io_type=io_type, driver=driver, input_type=input_type, output_type=output_type)
     else:
         part = our_config['convert']['XilinxPart']
         cfg = hls4ml.converters.create_config(backend=backend, part=part, clock_period=clock_period,
@@ -209,12 +211,15 @@ def main(args):
         if bool(our_config['convert']['FIFO_opt']):
             from hls4ml.model.profiling import optimize_fifos_depth
             hls_model = optimize_fifos_depth(hls_model)
+            our_config['convert']['OutputDir'] = our_config['convert']['OutputDir'] + "_FIFO_OPT"
+            hls4ml.report.read_vivado_report(our_config['convert']['OutputDir'])
         else:
             hls_model.build(reset=False, csim=True, cosim=True, validation=True, synth=True, vsynth=True, export=True)
             hls4ml.report.read_vivado_report(our_config['convert']['OutputDir'])
         if our_config['convert']['Backend'] == 'VivadoAccelerator':
             if our_config['convert']['Driver'] == 'c':
                 hls4ml.writer.vivado_accelerator_writer.VivadoAcceleratorWriter.write_header_file(
+                    hls_model,
                     X_test.reshape(num_samples, -1),
                     y_test,
                     y_keras,
