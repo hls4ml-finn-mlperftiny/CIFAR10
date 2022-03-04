@@ -50,7 +50,7 @@ quantization:
 convert:
   ApplyPatches: 1
   RemoveSoftmax: 1
-  OutputDir: my-hls-test-quantized-tiny2-arty-a7-100t
+  OutputDir: my-hls-test-quantized-tiny2-arty-a7-100t-rf16384-6p67ns_accuracy_FIFO_OPT
   XilinxPart: xc7a100tcsg324-1
   Backend: VivadoAccelerator
   IOType: io_stream
@@ -63,9 +63,11 @@ convert:
   ReuseFactor: 16384
   Trace: 0
   Build: 1
-  FIFO_opt: 1
+  EEMBC_power: 0
+  FIFO_opt: 0
+  FIFO_opt_json: max_depth_rf16384.json
   MergedRelu: 1
-  ClockPeriod: 10
+  ClockPeriod: 6.67
   Strategy: Resource
   Override:
     input_1:

@@ -1,4 +1,5 @@
 import os
+import json
 if os.system('nvidia-smi') == 0:
     import setGPU
 import tensorflow as tf
@@ -83,10 +84,14 @@ def main(args):
         _idxs = np.load('perf_samples_idxs.npy')
         X_test = X_test[_idxs]
         y_test = y_test[_idxs]
-    # just use first 10 samples for building (RTL sim is slow)
-    if bool(our_config['convert']['Build']):
+    # use first 10 samples for building with FIFO Opt
+    if bool(our_config['convert']['Build']) and bool(our_config['convert']['FIFO_opt']):
         X_test = X_test[:10]
         y_test = y_test[:10]
+    # or just first 2 samples for building without FIFO Opt
+    elif bool(our_config['convert']['Build']):
+        X_test = X_test[:2]
+        y_test = y_test[:2]
     num_samples = X_test.shape[0]
 
     X_test = np.ascontiguousarray(X_test, dtype=np.float32)
@@ -118,6 +123,8 @@ def main(args):
 
     if bool(our_config['convert']['FIFO_opt']):
         config['Model']['FIFO_opt'] = 1
+    if bool(our_config['convert']['EEMBC_power']):
+        config['Model']['EEMBC_power'] = 1
 
     config['SkipOptimizers'] = ['reshape_stream']
     
@@ -158,6 +165,31 @@ def main(args):
     cfg['KerasModel'] = model
     cfg['OutputDir'] = our_config['convert']['OutputDir']
     cfg['ApplyPatches'] = our_config['convert']['ApplyPatches']
+
+    hls_model = hls4ml.converters.keras_to_hls(cfg)
+
+    if our_config['convert']['FIFO_opt_json'] != "None":
+        with open(our_config['convert']['FIFO_opt_json'], 'r') as f:
+            maxs = json.load(f)
+
+        new_config = cfg.copy()['HLSConfig']
+        for k, v in hls_model.output_vars.items():
+            filtered_max = [x['max'] for x in maxs if v.cppname in x['name']]
+            if len(filtered_max) == 0:
+                continue
+            if len(filtered_max) > 1:
+                print('WARNING! Check names of FIFOs')
+            if k not in new_config['LayerName']:
+                new_config['LayerName'][k] = {'StreamDepth': filtered_max[0] + 1}
+            else:
+                new_config['LayerName'][k]['StreamDepth'] = filtered_max[0] + 1
+        for x in maxs:
+            if 'in_local' in x['name']:
+                new_config['LayerName']['in_local'] = {'StreamDepth': x['max'] + 1}
+            elif 'out_local' in x['name']:
+                new_config['LayerName']['out_local'] = {'StreamDepth': x['max'] + 1}
+        cfg['HLSConfig'] = new_config
+        hls_model = hls4ml.converters.keras_to_hls(cfg)
 
     print("-----------------------------------")
     print_dict(cfg)
