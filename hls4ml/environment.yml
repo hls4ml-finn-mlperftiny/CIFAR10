@@ -21,4 +21,5 @@ dependencies:
     - keras-tuner
     - setgpu
     - mplhep
+    - opencv-python
     

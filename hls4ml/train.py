@@ -39,9 +39,10 @@ def yaml_load(config):
 def main(args):
 
     # parameters
-    input_shape = [32, 32, 3]
-    num_classes = 10
     config = yaml_load(args.config)
+    data_name = config['data']['name']
+    input_shape = [int(i) for i in config['data']['input_shape']]
+    num_classes = int(config['data']['num_classes'])
     num_filters = config['model']['filters']
     kernel_sizes = config['model']['kernels']
     strides = config['model']['strides']
@@ -76,25 +77,44 @@ def main(args):
     lr_decay = config['fit']['compile']['lr_decay']
 
     # load dataset
-    (X_train, y_train), (X_test, y_test) = cifar10.load_data()
-    X_train, X_test = X_train/256., X_test/256.
+    if data_name == 'cifar10':
+        (X_train, y_train), (X_test, y_test) = cifar10.load_data()
+        X_train, X_test = X_train/256., X_test/256.
 
-    y_train = tf.keras.utils.to_categorical(y_train, num_classes)
-    y_test = tf.keras.utils.to_categorical(y_test, num_classes)
+        y_train = tf.keras.utils.to_categorical(y_train, num_classes)
+        y_test = tf.keras.utils.to_categorical(y_test, num_classes)
+
+    elif data_name == 'particlezoo':
+        import particlezoo
+        (X_train, y_train), (X_test, y_test) = particlezoo.load_data()
+        X_train, X_test = X_train/256., X_test/256.
+
     if loss == 'squared_hinge':
         y_train = y_train * 2 - 1  # -1 or 1 for hinge loss
         y_test = y_test * 2 - 1
 
     # define data generator
-    datagen = ImageDataGenerator(
-        rotation_range=15,
-        width_shift_range=0.1,
-        height_shift_range=0.1,
-        horizontal_flip=True,
-        # preprocessing_function=random_crop,
-        #brightness_range=(0.9, 1.2),
-        #contrast_range=(0.9, 1.2)
-    )
+    if data_name == 'cifar10':
+        datagen = ImageDataGenerator(
+            rotation_range=15,
+            width_shift_range=0.1,
+            height_shift_range=0.1,
+            horizontal_flip=True,
+            # preprocessing_function=random_crop,
+            # brightness_range=(0.9, 1.2),
+            # contrast_range=(0.9, 1.2)
+        )
+    elif data_name == 'particlezoo':
+        datagen = ImageDataGenerator(
+            rotation_range=15,
+            width_shift_range=0.1,
+            height_shift_range=0.1,
+            horizontal_flip=True,
+            # vertical_flip=True,
+            # zca_whitening=True,
+            # brightness_range=(0.9, 1.2),
+            # contrast_range=(0.9, 1.2)
+        )
 
     # run preprocessing on training dataset
     datagen.fit(X_train)
@@ -150,8 +170,8 @@ def main(args):
                               expand_nested=False)
 
     # Alternative FLOPs calculation (see https://github.com/tokusumi/keras-flops), ~same answer
-    #total_flop = get_flops(model, batch_size=1)
-    #print("FLOPS: {} GLOPs".format(total_flop/1e9))
+    # total_flop = get_flops(model, batch_size=1)
+    # print("FLOPS: {} GLOPs".format(total_flop/1e9))
 
     # compile model with optimizer
     model.compile(optimizer=optimizer(learning_rate=initial_lr),
