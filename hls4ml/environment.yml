@@ -8,7 +8,7 @@ dependencies:
     - jupyter
     - pydot
     - graphviz
-    - git+https://github.com/hls4ml-finn-mlperftiny/hls4ml.git@fifo_depth_opt#egg=hls4ml[profiling]
+    - git+https://github.com/hls4ml-finn-mlperftiny/hls4ml.git@remove_zero_pad#egg=hls4ml[profiling]
     - matplotlib
     - numpy
     - PyYAML
